@@ -49,13 +49,13 @@ let {
     color var(--duration-fast) var(--ease-out);
 }
 
-.button:active:not(:disabled) {
-  transform: scale(0.96);
-}
-
 .button:disabled {
   opacity: 0.4;
   cursor: not-allowed;
+}
+
+.button:active:not(:disabled) {
+  transform: scale(0.96);
 }
 
 .primary {
