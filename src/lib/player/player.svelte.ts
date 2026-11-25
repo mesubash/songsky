@@ -4,6 +4,7 @@ import { sound } from '$lib/audio/sound.svelte';
 import { addPlay } from '$lib/library/db';
 import { library } from '$lib/library/library.svelte';
 import type { Track } from '$lib/library/types';
+import { isIOS } from '$lib/platform';
 import { nextIndex, prevIndex, REPEAT_ORDER, type RepeatMode, shuffledWithFirst } from './queue';
 
 const STORAGE_KEY = 'attune:player';
@@ -41,26 +42,29 @@ class Player {
   #loadedId: string | null = null;
   #loadToken = 0;
   #fadeStarting = false;
-  #engine = new AudioEngine({
-    playing: (playing) => {
-      if (playing) this.error = null;
-      this.#setPlaying(playing);
+  #engine = new AudioEngine(
+    {
+      playing: (playing) => {
+        if (playing) this.error = null;
+        this.#setPlaying(playing);
+      },
+      ended: () => void this.next(true),
+      timeupdate: (time) => {
+        this.position = time;
+        this.#syncPositionState();
+        this.#maybeCrossfade(time);
+      },
+      durationchange: (duration) => {
+        this.duration = duration;
+        if (this.#loadedId) void library.setDuration(this.#loadedId, duration);
+      },
+      error: () => {
+        this.error =
+          'This song could not be played. The file may be damaged or in an unsupported format.';
+      },
     },
-    ended: () => void this.next(true),
-    timeupdate: (time) => {
-      this.position = time;
-      this.#syncPositionState();
-      this.#maybeCrossfade(time);
-    },
-    durationchange: (duration) => {
-      this.duration = duration;
-      if (this.#loadedId) void library.setDuration(this.#loadedId, duration);
-    },
-    error: () => {
-      this.error =
-        'This song could not be played. The file may be damaged or in an unsupported format.';
-    },
-  });
+    { effects: !isIOS() },
+  );
 
   constructor() {
     $effect.root(() => {
@@ -104,6 +108,11 @@ class Player {
 
   pause(): void {
     this.#engine.pause();
+  }
+
+  /** False on iPhone and iPad, where EQ, crossfade and the visualizer are turned off. */
+  get effectsAvailable(): boolean {
+    return this.#engine.effects;
   }
 
   /** Frequency data for visualizers. Null until the first song plays. */
@@ -264,6 +273,7 @@ class Player {
     const { duration } = this.#engine;
     const remaining = duration - time;
     if (
+      !this.#engine.effects ||
       sound.crossfade === 0 ||
       this.repeat === 'one' ||
       this.#fadeStarting ||

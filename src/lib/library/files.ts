@@ -1,3 +1,5 @@
+import { isIOS } from '$lib/platform';
+
 const AUDIO_EXTENSION = /\.(mp3|m4a|aac|flac|wav|ogg|oga|opus|webm|weba)$/i;
 
 export function isAudioFile(name: string): boolean {
@@ -26,14 +28,6 @@ export async function* walkDirectory(
     if (entry.kind === 'file' && isAudioFile(entry.name)) yield entry;
     else if (entry.kind === 'directory') yield* walkDirectory(entry);
   }
-}
-
-/** iPhone and iPad, including iPads that report themselves as Macs. */
-function isIOS(): boolean {
-  return (
-    /iPad|iPhone|iPod/.test(navigator.userAgent) ||
-    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
-  );
 }
 
 export const canPickFolder = typeof window !== 'undefined' && 'showDirectoryPicker' in window;

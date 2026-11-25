@@ -12,6 +12,10 @@ import { EQ_BANDS } from './eq';
  *
  * The AudioContext is created on the first play() so it starts inside a user gesture,
  * which iOS and Chrome require.
+ *
+ * With `effects: false` the graph is never built and the <audio> elements play straight
+ * to the speakers. iOS needs this: it suspends Web Audio when the screen locks, which
+ * silences anything routed through it, while plain media elements keep playing.
  */
 
 export interface EngineEvents {
@@ -43,8 +47,12 @@ export class AudioEngine {
   #eq: number[] = EQ_BANDS.map(() => 0);
   #fadeTimer: ReturnType<typeof setTimeout> | undefined;
 
-  constructor(events: EngineEvents) {
+  /** Whether EQ, crossfade and the analyser are available. */
+  readonly effects: boolean;
+
+  constructor(events: EngineEvents, { effects = true }: { effects?: boolean } = {}) {
     this.#events = events;
+    this.effects = effects && typeof AudioContext !== 'undefined';
     this.#decks = [this.#createDeck(0), this.#createDeck(1)];
   }
 
@@ -205,7 +213,7 @@ export class AudioEngine {
   }
 
   #ensureGraph(): void {
-    if (this.#context || typeof AudioContext === 'undefined') return;
+    if (this.#context || !this.effects) return;
     const context = new AudioContext({ latencyHint: 'playback' });
 
     this.#filters = EQ_BANDS.map((band, i) => {
