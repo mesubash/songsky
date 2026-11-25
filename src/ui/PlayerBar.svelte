@@ -122,6 +122,10 @@ const progress = $derived(player.duration ? (player.position / player.duration) 
   display: none;
 }
 
+.mobile-actions :global(.icon) {
+  color: var(--text);
+}
+
 @media (max-width: 720px) {
   .bar {
     grid-template-columns: minmax(0, 1fr) auto;
