@@ -23,8 +23,7 @@ test-results/
 
 # Editor / OS
 .DS_Store
-.vscode/*
-!.vscode/extensions.json
+.vscode/
 .idea/
 *.swp
 
