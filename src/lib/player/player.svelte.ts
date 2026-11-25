@@ -43,7 +43,10 @@ class Player {
   constructor() {
     const audio = this.#audio;
     audio.preload = 'auto';
-    audio.addEventListener('play', () => this.#setPlaying(true));
+    audio.addEventListener('play', () => {
+      this.error = null;
+      this.#setPlaying(true);
+    });
     audio.addEventListener('pause', () => this.#setPlaying(false));
     audio.addEventListener('ended', () => void this.next(true));
     audio.addEventListener('timeupdate', () => {
