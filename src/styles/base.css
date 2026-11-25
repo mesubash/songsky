@@ -36,7 +36,30 @@ body::before {
   background:
     radial-gradient(120% 60% at 50% 110%, var(--glow) 0%, transparent 55%),
     linear-gradient(180deg, var(--sky-top) 0%, var(--sky-mid) 55%, var(--sky-horizon) 100%);
-  transition: background var(--duration-sky) var(--ease-out);
+  transition:
+    background var(--duration-sky) var(--ease-out),
+    filter var(--duration-sky) var(--ease-out);
+}
+
+/* Weather tints the time-of-day sky: greyer for clouds and rain, darker for storms. */
+:root[data-weather="cloudy"] body::before {
+  filter: saturate(0.65) brightness(0.95);
+}
+
+:root[data-weather="fog"] body::before {
+  filter: saturate(0.45) brightness(1.05) contrast(0.85);
+}
+
+:root[data-weather="rain"] body::before {
+  filter: saturate(0.55) brightness(0.82);
+}
+
+:root[data-weather="storm"] body::before {
+  filter: saturate(0.45) brightness(0.68);
+}
+
+:root[data-weather="snow"] body::before {
+  filter: saturate(0.5) brightness(1.08);
 }
 
 h1,

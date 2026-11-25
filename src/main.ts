@@ -1,10 +1,10 @@
 import { mount } from 'svelte';
 import { pwa } from '$lib/pwa.svelte';
-import { applySky, skyForHour } from '$lib/sky/time';
+import { sky } from '$lib/sky/sky.svelte';
 import App from './App.svelte';
 import './styles/base.css';
 
-applySky(skyForHour(new Date().getHours()));
+sky.start();
 
 const target = document.getElementById('app');
 if (!target) throw new Error('Missing #app root element');
