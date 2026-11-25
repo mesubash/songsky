@@ -7,8 +7,9 @@ export function formatTime(seconds: number): string {
   return h > 0 ? `${h}:${String(m).padStart(2, '0')}:${s}` : `${m}:${s}`;
 }
 
-/** Library length in words: "42 min", "3 h 5 min". */
+/** Library length in words: "45 sec", "42 min", "3 h 5 min". */
 export function formatLength(seconds: number): string {
+  if (seconds > 0 && seconds < 60) return `${Math.round(seconds)} sec`;
   const minutes = Math.round(seconds / 60);
   const h = Math.floor(minutes / 60);
   const m = minutes % 60;

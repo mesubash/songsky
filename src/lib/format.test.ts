@@ -15,6 +15,7 @@ describe('formatTime', () => {
 describe('formatLength', () => {
   it.each([
     [0, '0 min'],
+    [15.4, '15 sec'],
     [2520, '42 min'],
     [11100, '3 h 5 min'],
   ])('%s → %s', (input, output) => expect(formatLength(input)).toBe(output));
