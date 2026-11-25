@@ -32,12 +32,12 @@ Two `<audio>` elements act as decks. Crossfading ramps gain A down while gain B 
 
 ## Data (IndexedDB)
 
-| Store | Holds |
-|---|---|
-| `tracks` | Title, artist, album, duration, cover, BPM/key (when analysed), file reference |
-| `handles` | Folder handles, so the library survives reloads (Chromium) |
-| `history` | Each play: track, time, optional location |
-| `settings` | Theme, EQ, feature toggles |
+| Store      | Holds                                                                          |
+| ---------- | ------------------------------------------------------------------------------ |
+| `tracks`   | Title, artist, album, duration, cover, BPM/key (when analysed), file reference |
+| `handles`  | Folder handles, so the library survives reloads (Chromium)                     |
+| `history`  | Each play: track, time, optional location                                      |
+| `settings` | Theme, EQ, feature toggles                                                     |
 
 ## Project layout
 
