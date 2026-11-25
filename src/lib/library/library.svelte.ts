@@ -1,6 +1,6 @@
 import { SvelteMap } from 'svelte/reactivity';
 import { db } from './db';
-import { canPickFolder, isAbortError, pickFiles, walkDirectory } from './files';
+import { canPickFolder, isAbortError, isAudioFile, pickFiles, walkDirectory } from './files';
 import { type ReadResult, readTrack } from './metadata';
 import type { Track } from './types';
 
@@ -72,7 +72,13 @@ class Library {
   }
 
   async addFiles(files?: File[]): Promise<void> {
-    const picked = files ?? (await pickFiles());
+    const chosen = files ?? (await pickFiles());
+    const picked = chosen.filter((file) => isAudioFile(file.name));
+    if (chosen.length > 0 && picked.length === 0) {
+      this.notice =
+        'Those files aren’t songs Attune can play. Choose MP3, M4A, FLAC, WAV or OGG files.';
+      return;
+    }
     if (picked.length === 0) return;
     void navigator.storage?.persist?.();
     await this.#import(picked.map((file) => ({ file })));

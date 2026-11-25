@@ -28,6 +28,14 @@ export async function* walkDirectory(
   }
 }
 
+/** iPhone and iPad, including iPads that report themselves as Macs. */
+function isIOS(): boolean {
+  return (
+    /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+  );
+}
+
 export const canPickFolder = typeof window !== 'undefined' && 'showDirectoryPicker' in window;
 
 /** Opens the native file picker. Resolves with [] if the user cancels. */
@@ -36,7 +44,9 @@ export function pickFiles(): Promise<File[]> {
     const input = document.createElement('input');
     input.type = 'file';
     input.multiple = true;
-    input.accept = 'audio/*';
+    // iOS greys out .mp3 and other audio files when `accept` is set, so let it show
+    // everything there; non-audio picks are filtered out after.
+    if (!isIOS()) input.accept = 'audio/*';
     input.addEventListener('change', () => resolve([...(input.files ?? [])]));
     input.addEventListener('cancel', () => resolve([]));
     input.click();
