@@ -326,6 +326,9 @@ class Player {
     this.playing = playing;
     if ('mediaSession' in navigator) {
       navigator.mediaSession.playbackState = playing ? 'playing' : 'paused';
+      // iOS can drop handlers registered before audio started, then shows its own
+      // ±10 s buttons. Registering again on every start keeps next/previous there.
+      if (playing) this.#bindMediaSession();
     }
     if (!playing) this.save();
   }
@@ -336,12 +339,15 @@ class Player {
 
   #bindMediaSession(): void {
     if (!('mediaSession' in navigator)) return;
-    const handlers: [MediaSessionAction, MediaSessionActionHandler][] = [
+    const handlers: [MediaSessionAction, MediaSessionActionHandler | null][] = [
       ['play', () => void this.toggle()],
       ['pause', () => this.pause()],
       ['previoustrack', () => void this.prev()],
       ['nexttrack', () => void this.next()],
       ['seekto', (d) => d.seekTime !== undefined && this.seek(d.seekTime)],
+      // Cleared on purpose: when these exist, iOS shows them instead of next/previous.
+      ['seekbackward', null],
+      ['seekforward', null],
     ];
     for (const [action, handler] of handlers) {
       try {
