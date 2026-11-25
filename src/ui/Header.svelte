@@ -27,6 +27,7 @@ import Button from './Button.svelte';
   justify-content: space-between;
   gap: var(--space-4);
   padding-block: var(--space-6) var(--space-4);
+  padding-top: max(var(--space-6), env(safe-area-inset-top));
 }
 
 .wordmark {
