@@ -1,27 +1,107 @@
-<main class="landing">
-  <h1 class="wordmark">attune</h1>
-  <p class="tagline">Music in tune with your life.</p>
-</main>
+<script lang="ts">
+import { onMount } from 'svelte';
+import { isAudioFile } from '$lib/library/files';
+import { library } from '$lib/library/library.svelte';
+import { player } from '$lib/player/player.svelte';
+import EmptyState from './ui/EmptyState.svelte';
+import Header from './ui/Header.svelte';
+import LibraryView from './ui/LibraryView.svelte';
+import NowPlaying from './ui/NowPlaying.svelte';
+import PlayerBar from './ui/PlayerBar.svelte';
+import StatusMessage from './ui/StatusMessage.svelte';
+
+let ready = $state(false);
+let nowPlayingOpen = $state(false);
+let dragging = $state(false);
+
+onMount(async () => {
+  await library.load();
+  player.restore();
+  ready = true;
+});
+
+function isTyping(target: EventTarget | null): boolean {
+  return (
+    target instanceof HTMLElement &&
+    (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT', 'BUTTON'].includes(target.tagName))
+  );
+}
+
+function onkeydown(event: KeyboardEvent) {
+  if (event.code === 'Space' && !isTyping(event.target)) {
+    event.preventDefault();
+    void player.toggle();
+  }
+}
+
+const hasFiles = (event: DragEvent) => event.dataTransfer?.types.includes('Files') ?? false;
+
+function ondrop(event: DragEvent) {
+  if (!hasFiles(event)) return;
+  event.preventDefault();
+  dragging = false;
+  const files = [...(event.dataTransfer?.files ?? [])].filter((f) => isAudioFile(f.name));
+  if (files.length) void library.addFiles(files);
+}
+</script>
+
+<svelte:window
+  {onkeydown}
+  ondragover={(e) => {
+    if (!hasFiles(e)) return;
+    e.preventDefault();
+    dragging = true;
+  }}
+  ondragleave={(e) => {
+    if (!e.relatedTarget) dragging = false;
+  }}
+  {ondrop}
+/>
+
+<div class="app" class:has-player={!!player.current}>
+  <Header />
+  <main>
+    {#if ready}
+      {#if library.tracks.length > 0}
+        <LibraryView />
+      {:else}
+        <EmptyState />
+      {/if}
+    {/if}
+  </main>
+</div>
+
+<PlayerBar onexpand={() => (nowPlayingOpen = true)} />
+<NowPlaying bind:open={nowPlayingOpen} />
+<StatusMessage />
+
+{#if dragging}
+  <div class="drop" aria-hidden="true"><p>Drop to add songs</p></div>
+{/if}
 
 <style>
-.landing {
-  min-height: 100dvh;
+.app {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding-inline: clamp(var(--space-4), 4vw, var(--space-12));
+  padding-bottom: var(--space-12);
+}
+
+.has-player {
+  padding-bottom: calc(120px + env(safe-area-inset-bottom));
+}
+
+.drop {
+  position: fixed;
+  inset: var(--space-4);
+  z-index: 30;
   display: grid;
-  place-content: center;
-  gap: var(--space-2);
-  padding: var(--space-8);
-  text-align: center;
-}
-
-.wordmark {
-  font-size: var(--text-3xl);
-  font-weight: 750;
-  font-variation-settings: "opsz" 96;
-  letter-spacing: -0.045em;
-}
-
-.tagline {
-  color: var(--text-muted);
-  font-size: var(--text-lg);
+  place-items: center;
+  border: 2px dashed var(--text);
+  border-radius: var(--radius-lg);
+  background: color-mix(in srgb, var(--sky-top) 70%, transparent);
+  font-size: var(--text-xl);
+  font-weight: 650;
+  pointer-events: none;
 }
 </style>
