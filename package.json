@@ -13,7 +13,8 @@
     "lint": "biome check .",
     "format": "biome check --write .",
     "test": "vitest run --passWithNoTests",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "icons": "pwa-assets-generator"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.6.9",
@@ -21,11 +22,14 @@
     "@tsconfig/svelte": "^5.0.8",
     "@types/node": "^24.19.2",
     "@types/wicg-file-system-access": "^2023.10.7",
+    "@vite-pwa/assets-generator": "^2.0.0",
     "svelte": "^5.57.3",
     "svelte-check": "^4.7.7",
     "typescript": "~6.0.3",
     "vite": "^8.3.6",
-    "vitest": "^5.1.2"
+    "vite-plugin-pwa": "^2.0.0",
+    "vitest": "^5.1.2",
+    "workbox-window": "^7.4.1"
   },
   "packageManager": "pnpm@10.12.4",
   "engines": {
