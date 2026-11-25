@@ -1,3 +1,6 @@
+import { AudioEngine } from '$lib/audio/engine';
+import { fadeLength } from '$lib/audio/eq';
+import { sound } from '$lib/audio/sound.svelte';
 import { addPlay } from '$lib/library/db';
 import { library } from '$lib/library/library.svelte';
 import type { Track } from '$lib/library/types';
@@ -35,33 +38,33 @@ class Player {
 
   /** Queue order before shuffling, so turning shuffle off restores it. */
   #order: string[] = [];
-  #audio = new Audio();
-  #url: string | null = null;
   #loadedId: string | null = null;
   #loadToken = 0;
-
-  constructor() {
-    const audio = this.#audio;
-    audio.preload = 'auto';
-    audio.addEventListener('play', () => {
-      this.error = null;
-      this.#setPlaying(true);
-    });
-    audio.addEventListener('pause', () => this.#setPlaying(false));
-    audio.addEventListener('ended', () => void this.next(true));
-    audio.addEventListener('timeupdate', () => {
-      this.position = audio.currentTime;
+  #fadeStarting = false;
+  #engine = new AudioEngine({
+    playing: (playing) => {
+      if (playing) this.error = null;
+      this.#setPlaying(playing);
+    },
+    ended: () => void this.next(true),
+    timeupdate: (time) => {
+      this.position = time;
       this.#syncPositionState();
-    });
-    audio.addEventListener('durationchange', () => {
-      if (!Number.isFinite(audio.duration)) return;
-      this.duration = audio.duration;
-      if (this.#loadedId) void library.setDuration(this.#loadedId, audio.duration);
-    });
-    audio.addEventListener('error', () => {
-      if (!audio.src) return;
+      this.#maybeCrossfade(time);
+    },
+    durationchange: (duration) => {
+      this.duration = duration;
+      if (this.#loadedId) void library.setDuration(this.#loadedId, duration);
+    },
+    error: () => {
       this.error =
         'This song could not be played. The file may be damaged or in an unsupported format.';
+    },
+  });
+
+  constructor() {
+    $effect.root(() => {
+      $effect(() => this.#engine.setEq(sound.eq));
     });
 
     this.#bindMediaSession();
@@ -100,7 +103,12 @@ class Player {
   }
 
   pause(): void {
-    this.#audio.pause();
+    this.#engine.pause();
+  }
+
+  /** Frequency data for visualizers. Null until the first song plays. */
+  get analyser(): AnalyserNode | null {
+    return this.#engine.analyser;
   }
 
   /** `auto` means the song ended by itself (repeat-one replays, end of queue stops). */
@@ -135,7 +143,7 @@ class Player {
     const max = this.duration || seconds;
     const time = Math.min(Math.max(seconds, 0), max);
     this.position = time;
-    if (this.#loadedId) this.#audio.currentTime = time;
+    if (this.#loadedId) this.#engine.seek(time);
   }
 
   setVolume(volume: number): void {
@@ -211,7 +219,11 @@ class Player {
     this.#updateMetadata();
   }
 
-  async #load(autoplay: boolean, startAt = 0): Promise<void> {
+  /**
+   * Loads the current track. With `fadeWithin` (seconds left on the outgoing song) it
+   * crossfades into it instead of cutting.
+   */
+  async #load(autoplay: boolean, startAt = 0, fadeWithin?: number): Promise<void> {
     const token = ++this.#loadToken;
     const track = this.current;
     if (!track) return;
@@ -224,22 +236,56 @@ class Player {
     const file = await library.fileFor(track);
     if (token !== this.#loadToken) return; // A newer load started meanwhile.
     if (!file) {
-      this.#audio.pause();
+      this.#engine.pause();
       this.error = `“${track.title}” isn't available. Add it again to play it.`;
       return;
     }
 
-    if (this.#url) URL.revokeObjectURL(this.#url);
-    this.#url = URL.createObjectURL(file);
     this.#loadedId = track.id;
-    this.#audio.src = this.#url;
-    if (startAt > 0) this.#audio.currentTime = startAt;
+    if (fadeWithin !== undefined) {
+      try {
+        await this.#engine.crossfadeTo(
+          file,
+          fadeLength(sound.crossfade, fadeWithin, track.duration),
+        );
+        void addPlay(track.id);
+      } catch {
+        this.error = 'Playback was blocked. Press play to start.';
+      }
+      return;
+    }
+
+    this.#engine.load(file, startAt);
     if (autoplay) await this.#play();
+  }
+
+  /** Starts the next song early so the two overlap, when crossfade is on. */
+  #maybeCrossfade(time: number): void {
+    const { duration } = this.#engine;
+    const remaining = duration - time;
+    if (
+      sound.crossfade === 0 ||
+      this.repeat === 'one' ||
+      this.#fadeStarting ||
+      this.#engine.fading ||
+      duration <= 0 ||
+      remaining > sound.crossfade
+    ) {
+      return;
+    }
+    const index = nextIndex(this.queue.length, this.index, this.repeat, true);
+    if (index === null || index === this.index) return;
+
+    this.#fadeStarting = true;
+    this.index = index;
+    void this.#load(true, 0, remaining).finally(() => {
+      this.#fadeStarting = false;
+    });
   }
 
   async #play(): Promise<void> {
     try {
-      await this.#audio.play();
+      await this.#engine.play();
       if (this.#loadedId && this.position < 1) void addPlay(this.#loadedId);
     } catch (error) {
       if (!(error instanceof DOMException && error.name === 'AbortError')) {
@@ -257,8 +303,7 @@ class Player {
   }
 
   #applyVolume(): void {
-    this.#audio.volume = this.volume;
-    this.#audio.muted = this.muted;
+    this.#engine.setVolume(this.volume, this.muted);
   }
 
   #bindMediaSession(): void {
@@ -295,11 +340,11 @@ class Player {
   }
 
   #syncPositionState(): void {
-    const { duration, currentTime, playbackRate } = this.#audio;
-    if (!('mediaSession' in navigator) || !Number.isFinite(duration) || currentTime > duration) {
+    const { duration, currentTime } = this.#engine;
+    if (!('mediaSession' in navigator) || duration <= 0 || currentTime > duration) {
       return;
     }
-    navigator.mediaSession.setPositionState({ duration, position: currentTime, playbackRate });
+    navigator.mediaSession.setPositionState({ duration, position: currentTime });
   }
 }
 
