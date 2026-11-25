@@ -48,7 +48,7 @@ $effect(() => {
       </div>
 
       <div class="horizon">
-        {#if open}
+        {#if open && player.effectsAvailable}
           <Visualizer />
         {/if}
       </div>

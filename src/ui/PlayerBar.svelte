@@ -37,7 +37,9 @@ const progress = $derived(player.duration ? (player.position / player.duration) 
         aria-label="Sound settings"
         onclick={onsound}
       />
-      <VolumeControl />
+      {#if player.effectsAvailable}
+        <VolumeControl />
+      {/if}
     </div>
 
     <div class="mobile-actions">

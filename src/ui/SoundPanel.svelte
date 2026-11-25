@@ -1,6 +1,7 @@
 <script lang="ts">
 import { EQ_BANDS, EQ_PRESETS, EQ_RANGE_DB, type EqPresetId } from '$lib/audio/eq';
 import { CROSSFADE_MAX, sound } from '$lib/audio/sound.svelte';
+import { player } from '$lib/player/player.svelte';
 import Button from './Button.svelte';
 
 let { open = $bindable(false) }: { open?: boolean } = $props();
@@ -46,64 +47,71 @@ function closeOnBackdrop(event: MouseEvent) {
       />
     </header>
 
-    <section class="group">
-      <div class="row">
-        <label for="crossfade">Crossfade</label>
-        <output for="crossfade">{sound.crossfade === 0 ? 'Off' : `${sound.crossfade} s`}</output>
-      </div>
-      <input
-        id="crossfade"
-        class="range"
-        type="range"
-        min="0"
-        max={CROSSFADE_MAX}
-        step="1"
-        value={sound.crossfade}
-        style:--fill="{(sound.crossfade / CROSSFADE_MAX) * 100}%"
-        aria-valuetext={sound.crossfade === 0 ? 'Off' : `${sound.crossfade} seconds`}
-        oninput={(e) => sound.setCrossfade(e.currentTarget.valueAsNumber)}
-      >
-      <p class="help">Songs overlap at the end so there's no silence between them.</p>
-    </section>
+    {#if player.effectsAvailable}
+      <section class="group">
+        <div class="row">
+          <label for="crossfade">Crossfade</label>
+          <output for="crossfade">{sound.crossfade === 0 ? 'Off' : `${sound.crossfade} s`}</output>
+        </div>
+        <input
+          id="crossfade"
+          class="range"
+          type="range"
+          min="0"
+          max={CROSSFADE_MAX}
+          step="1"
+          value={sound.crossfade}
+          style:--fill="{(sound.crossfade / CROSSFADE_MAX) * 100}%"
+          aria-valuetext={sound.crossfade === 0 ? 'Off' : `${sound.crossfade} seconds`}
+          oninput={(e) => sound.setCrossfade(e.currentTarget.valueAsNumber)}
+        >
+        <p class="help">Songs overlap at the end so there's no silence between them.</p>
+      </section>
 
-    <section class="group" aria-labelledby="eq-title">
-      <h3 id="eq-title">Equalizer</h3>
-      <fieldset class="presets">
-        <legend class="visually-hidden">Presets</legend>
-        {#each presets as [id, preset] (id)}
-          <button
-            type="button"
-            class="chip"
-            aria-pressed={sound.preset === id}
-            onclick={() => sound.usePreset(id)}
-          >
-            {preset.label}
-          </button>
-        {/each}
-      </fieldset>
-
-      <div class="bands">
-        {#each EQ_BANDS as band, i (band.frequency)}
-          {@const gain = sound.eq[i] ?? 0}
-          <div class="band">
-            <span class="gain">{formatGain(gain)}</span>
-            <input
-              class="vertical"
-              type="range"
-              min={-EQ_RANGE_DB}
-              max={EQ_RANGE_DB}
-              step="1"
-              value={gain}
-              style={fillFor(gain)}
-              aria-label={band.label}
-              aria-valuetext="{formatGain(gain)} decibels"
-              oninput={(e) => sound.setBand(i, e.currentTarget.valueAsNumber)}
+      <section class="group" aria-labelledby="eq-title">
+        <h3 id="eq-title">Equalizer</h3>
+        <fieldset class="presets">
+          <legend class="visually-hidden">Presets</legend>
+          {#each presets as [id, preset] (id)}
+            <button
+              type="button"
+              class="chip"
+              aria-pressed={sound.preset === id}
+              onclick={() => sound.usePreset(id)}
             >
-            <span class="freq">{band.label}</span>
-          </div>
-        {/each}
-      </div>
-    </section>
+              {preset.label}
+            </button>
+          {/each}
+        </fieldset>
+
+        <div class="bands">
+          {#each EQ_BANDS as band, i (band.frequency)}
+            {@const gain = sound.eq[i] ?? 0}
+            <div class="band">
+              <span class="gain">{formatGain(gain)}</span>
+              <input
+                class="vertical"
+                type="range"
+                min={-EQ_RANGE_DB}
+                max={EQ_RANGE_DB}
+                step="1"
+                value={gain}
+                style={fillFor(gain)}
+                aria-label={band.label}
+                aria-valuetext="{formatGain(gain)} decibels"
+                oninput={(e) => sound.setBand(i, e.currentTarget.valueAsNumber)}
+              >
+              <span class="freq">{band.label}</span>
+            </div>
+          {/each}
+        </div>
+      </section>
+    {:else}
+      <p class="help">
+        On iPhone and iPad, crossfade and the equalizer are off so music keeps playing when the
+        screen locks. Use the volume buttons on your device to change the volume.
+      </p>
+    {/if}
   </div>
 </dialog>
 
