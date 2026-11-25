@@ -1,0 +1,44 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+dev-dist/
+*.tsbuildinfo
+
+# Env
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Test / coverage
+coverage/
+playwright-report/
+test-results/
+
+# Editor / OS
+.DS_Store
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.swp
+
+# Local music used for testing (never commit audio)
+*.mp3
+*.flac
+*.wav
+*.m4a
+*.ogg
+*.opus
+
+# Capacitor (if mobile wrap is added later)
+android/
+ios/
+
+# Private planning notes (not published)
+.plan/
