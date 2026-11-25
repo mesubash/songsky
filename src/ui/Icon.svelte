@@ -31,6 +31,11 @@ const ICONS = {
   },
   plus: { d: 'M12 5v14M5 12h14', fill: false },
   'chevron-down': { d: 'M6 9l6 6 6-6', fill: false },
+  sliders: {
+    d: 'M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6',
+    fill: false,
+  },
+  close: { d: 'M6 6l12 12M18 6 6 18', fill: false },
   music: {
     d: 'M9 18V5l12-2v13M9 18a3 3 0 1 1-6 0 3 3 0 0 1 6 0zM21 16a3 3 0 1 1-6 0 3 3 0 0 1 6 0z',
     fill: false,

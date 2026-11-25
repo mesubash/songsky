@@ -6,7 +6,7 @@ import Cover from './Cover.svelte';
 import SeekBar from './SeekBar.svelte';
 import VolumeControl from './VolumeControl.svelte';
 
-let { onexpand }: { onexpand: () => void } = $props();
+let { onexpand, onsound }: { onexpand: () => void; onsound: () => void } = $props();
 
 const progress = $derived(player.duration ? (player.position / player.duration) * 100 : 0);
 </script>
@@ -30,6 +30,13 @@ const progress = $derived(player.duration ? (player.position / player.duration) 
     </div>
 
     <div class="side">
+      <Button
+        variant="icon"
+        icon="sliders"
+        iconSize={18}
+        aria-label="Sound settings"
+        onclick={onsound}
+      />
       <VolumeControl />
     </div>
 

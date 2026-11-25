@@ -8,10 +8,12 @@ import Header from './ui/Header.svelte';
 import LibraryView from './ui/LibraryView.svelte';
 import NowPlaying from './ui/NowPlaying.svelte';
 import PlayerBar from './ui/PlayerBar.svelte';
+import SoundPanel from './ui/SoundPanel.svelte';
 import StatusMessage from './ui/StatusMessage.svelte';
 
 let ready = $state(false);
 let nowPlayingOpen = $state(false);
+let soundOpen = $state(false);
 let dragging = $state(false);
 
 onMount(async () => {
@@ -71,8 +73,9 @@ function ondrop(event: DragEvent) {
   </main>
 </div>
 
-<PlayerBar onexpand={() => (nowPlayingOpen = true)} />
-<NowPlaying bind:open={nowPlayingOpen} />
+<PlayerBar onexpand={() => (nowPlayingOpen = true)} onsound={() => (soundOpen = true)} />
+<NowPlaying bind:open={nowPlayingOpen} onsound={() => (soundOpen = true)} />
+<SoundPanel bind:open={soundOpen} />
 <StatusMessage />
 
 {#if dragging}
