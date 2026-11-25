@@ -49,8 +49,7 @@ function clearLibrary() {
 
 .title {
   font-size: var(--text-2xl);
-  font-variation-settings: "opsz" 72;
-  letter-spacing: -0.03em;
+  letter-spacing: -0.02em;
 }
 
 .meta {

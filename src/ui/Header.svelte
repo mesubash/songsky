@@ -34,9 +34,7 @@ import SkyControl from './SkyControl.svelte';
 
 .wordmark {
   font-size: var(--text-xl);
-  font-weight: 750;
-  font-variation-settings: "opsz" 48;
-  letter-spacing: -0.04em;
+  letter-spacing: -0.03em;
 }
 
 .actions {

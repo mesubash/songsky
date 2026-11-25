@@ -32,9 +32,7 @@ import Button from './Button.svelte';
 
 .headline {
   font-size: var(--text-3xl);
-  font-weight: 700;
-  font-variation-settings: "opsz" 96;
-  letter-spacing: -0.035em;
+  letter-spacing: -0.03em;
 }
 
 .lead {

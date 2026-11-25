@@ -121,7 +121,6 @@ header {
 
 .title {
   font-size: var(--text-xl);
-  font-variation-settings: "opsz" 48;
   letter-spacing: -0.02em;
 }
 
