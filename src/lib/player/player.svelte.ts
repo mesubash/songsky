@@ -10,7 +10,6 @@ import { nextIndex, prevIndex, REPEAT_ORDER, type RepeatMode, shuffledWithFirst 
 const STORAGE_KEY = 'attune:player';
 /** Pressing previous after this many seconds restarts the song instead. */
 const RESTART_AFTER = 3;
-const SKIP_SECONDS = 10;
 
 interface SavedSession {
   order: string[];
@@ -41,6 +40,8 @@ class Player {
   #order: string[] = [];
   #loadedId: string | null = null;
   #loadToken = 0;
+  /** The next song's file, fetched ahead of time. See #prepareNext. */
+  #upNext: { id: string; file: File } | null = null;
   #fadeStarting = false;
   #engine = new AudioEngine(
     {
@@ -178,11 +179,13 @@ class Player {
       this.queue = [...this.#order];
       this.index = this.#order.indexOf(currentId);
     }
+    void this.#prepareNext();
   }
 
   cycleRepeat(): void {
     const i = REPEAT_ORDER.indexOf(this.repeat);
     this.repeat = REPEAT_ORDER[(i + 1) % REPEAT_ORDER.length] ?? 'off';
+    void this.#prepareNext();
   }
 
   save(): void {
@@ -242,7 +245,10 @@ class Player {
     this.duration = track.duration;
     this.#updateMetadata();
 
-    const file = await library.fileFor(track);
+    // When the file is already fetched, nothing here waits: iOS stops running a locked
+    // page moments after a song ends, so the next one must start straight away.
+    const ready = this.#upNext?.id === track.id ? this.#upNext.file : null;
+    const file = ready ?? (await library.fileFor(track));
     if (token !== this.#loadToken) return; // A newer load started meanwhile.
     if (!file) {
       this.#engine.pause();
@@ -261,11 +267,23 @@ class Player {
       } catch {
         this.error = 'Playback was blocked. Press play to start.';
       }
+      void this.#prepareNext();
       return;
     }
 
     this.#engine.load(file, startAt);
+    void this.#prepareNext();
     if (autoplay) await this.#play();
+  }
+
+  /** Fetches the song that will play after this one, so it can start without waiting. */
+  async #prepareNext(): Promise<void> {
+    const index = nextIndex(this.queue.length, this.index, this.repeat, true);
+    const id = index === null ? undefined : this.queue[index];
+    const track = id === undefined ? undefined : library.byId.get(id);
+    if (!track || this.#upNext?.id === track.id) return;
+    const file = await library.fileFor(track);
+    this.#upNext = file ? { id: track.id, file } : null;
   }
 
   /** Starts the next song early so the two overlap, when crossfade is on. */
@@ -323,8 +341,6 @@ class Player {
       ['pause', () => this.pause()],
       ['previoustrack', () => void this.prev()],
       ['nexttrack', () => void this.next()],
-      ['seekbackward', (d) => this.seek(this.position - (d.seekOffset ?? SKIP_SECONDS))],
-      ['seekforward', (d) => this.seek(this.position + (d.seekOffset ?? SKIP_SECONDS))],
       ['seekto', (d) => d.seekTime !== undefined && this.seek(d.seekTime)],
     ];
     for (const [action, handler] of handlers) {
