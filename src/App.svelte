@@ -10,6 +10,7 @@ import NowPlaying from './ui/NowPlaying.svelte';
 import PlayerBar from './ui/PlayerBar.svelte';
 import SoundPanel from './ui/SoundPanel.svelte';
 import StatusMessage from './ui/StatusMessage.svelte';
+import UpdatePrompt from './ui/UpdatePrompt.svelte';
 
 let ready = $state(false);
 let nowPlayingOpen = $state(false);
@@ -77,6 +78,7 @@ function ondrop(event: DragEvent) {
 <NowPlaying bind:open={nowPlayingOpen} onsound={() => (soundOpen = true)} />
 <SoundPanel bind:open={soundOpen} />
 <StatusMessage />
+<UpdatePrompt />
 
 {#if dragging}
   <div class="drop" aria-hidden="true"><p>Drop to add songs</p></div>
