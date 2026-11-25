@@ -1,13 +1,15 @@
 <script lang="ts">
 import { library } from '$lib/library/library.svelte';
 import Button from './Button.svelte';
+import SkyControl from './SkyControl.svelte';
 </script>
 
 <header class="header">
   <h1 class="wordmark">attune<span class="visually-hidden"> music player</span></h1>
 
-  {#if library.tracks.length > 0}
-    <div class="actions">
+  <div class="actions">
+    <SkyControl />
+    {#if library.tracks.length > 0}
       {#if library.canPickFolder}
         <Button icon="folder" aria-label="Add folder" onclick={() => library.addFolder()}>
           <span class="wide-only">Add folder</span>
@@ -16,8 +18,8 @@ import Button from './Button.svelte';
       <Button icon="plus" aria-label="Add songs" onclick={() => library.addFiles()}>
         <span class="wide-only">Add songs</span>
       </Button>
-    </div>
-  {/if}
+    {/if}
+  </div>
 </header>
 
 <style>

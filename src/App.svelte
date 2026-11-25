@@ -8,6 +8,7 @@ import Header from './ui/Header.svelte';
 import LibraryView from './ui/LibraryView.svelte';
 import NowPlaying from './ui/NowPlaying.svelte';
 import PlayerBar from './ui/PlayerBar.svelte';
+import SkyEffects from './ui/SkyEffects.svelte';
 import SoundPanel from './ui/SoundPanel.svelte';
 import StatusMessage from './ui/StatusMessage.svelte';
 import UpdatePrompt from './ui/UpdatePrompt.svelte';
@@ -60,6 +61,8 @@ function ondrop(event: DragEvent) {
   }}
   {ondrop}
 />
+
+<SkyEffects />
 
 <div class="app" class:has-player={!!player.current}>
   <Header />
