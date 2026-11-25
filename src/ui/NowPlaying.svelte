@@ -3,22 +3,16 @@ import { player } from '$lib/player/player.svelte';
 import Button from './Button.svelte';
 import Controls from './Controls.svelte';
 import Cover from './Cover.svelte';
+import { modal } from './modal';
 import SeekBar from './SeekBar.svelte';
 import Visualizer from './Visualizer.svelte';
 
 let { open = $bindable(false), onsound }: { open?: boolean; onsound: () => void } = $props();
-
-let dialog: HTMLDialogElement;
-
-$effect(() => {
-  if (open && !dialog.open) dialog.showModal();
-  else if (!open && dialog.open) dialog.close();
-});
 </script>
 
 <!-- Native dialog: focus is trapped and Escape closes it. -->
 <dialog
-  bind:this={dialog}
+  use:modal={open}
   class="now-playing"
   aria-label="Now playing"
   onclose={() => (open = false)}

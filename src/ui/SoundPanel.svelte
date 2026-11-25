@@ -3,15 +3,9 @@ import { EQ_BANDS, EQ_PRESETS, EQ_RANGE_DB, type EqPresetId } from '$lib/audio/e
 import { CROSSFADE_MAX, sound } from '$lib/audio/sound.svelte';
 import { player } from '$lib/player/player.svelte';
 import Button from './Button.svelte';
+import { modal } from './modal';
 
 let { open = $bindable(false) }: { open?: boolean } = $props();
-
-let dialog: HTMLDialogElement;
-
-$effect(() => {
-  if (open && !dialog.open) dialog.showModal();
-  else if (!open && dialog.open) dialog.close();
-});
 
 const presets = Object.entries(EQ_PRESETS) as [EqPresetId, (typeof EQ_PRESETS)[EqPresetId]][];
 const formatGain = (db: number) => (db > 0 ? `+${db}` : `${db}`);
@@ -24,13 +18,13 @@ function fillFor(db: number): string {
 
 /** Clicking the dimmed area outside the panel closes it. */
 function closeOnBackdrop(event: MouseEvent) {
-  if (event.target === dialog) open = false;
+  if (event.target === event.currentTarget) open = false;
 }
 </script>
 
 <!-- biome-ignore lint/a11y/useKeyWithClickEvents: Escape already closes the native dialog; this only handles backdrop clicks. -->
 <dialog
-  bind:this={dialog}
+  use:modal={open}
   class="panel"
   aria-labelledby="sound-title"
   onclose={() => (open = false)}
