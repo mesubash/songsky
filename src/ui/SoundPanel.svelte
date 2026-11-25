@@ -110,6 +110,7 @@ function closeOnBackdrop(event: MouseEvent) {
 <style>
 .panel {
   width: min(100% - 2rem, 26rem);
+  margin: auto; /* The global reset removes the dialog's default centering. */
   max-height: calc(100dvh - 2rem);
   padding: 0;
   border: 1px solid var(--line);
