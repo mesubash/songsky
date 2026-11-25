@@ -125,7 +125,7 @@ function closeOnBackdrop(event: MouseEvent) {
       </div>
     {/if}
 
-    <Button variant="primary" icon="pin" onclick={() => sky.useLocation()} disabled={sky.loading}>
+    <Button icon="pin" onclick={() => sky.useLocation()} disabled={sky.loading}>
       Use my location
     </Button>
 
