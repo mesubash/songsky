@@ -32,12 +32,15 @@ Two `<audio>` elements act as decks. Crossfading ramps gain A down while gain B 
 
 ## Data (IndexedDB)
 
-| Store      | Holds                                                                          |
-| ---------- | ------------------------------------------------------------------------------ |
-| `tracks`   | Title, artist, album, duration, cover, BPM/key (when analysed), file reference |
-| `handles`  | Folder handles, so the library survives reloads (Chromium)                     |
-| `history`  | Each play: track, time, optional location                                      |
-| `settings` | Theme, EQ, feature toggles                                                     |
+| Store     | Holds                                                                          |
+| --------- | ------------------------------------------------------------------------------ |
+| `tracks`  | Title, artist, album, duration, cover id, BPM/key (when analysed), file handle |
+| `covers`  | Cover art, stored once per album                                               |
+| `folders` | Folder handles, so the library survives reloads (Chromium)                     |
+| `files`   | Copied audio for browsers without folder access (Safari, Firefox)              |
+| `history` | Each play: track, time, optional location                                      |
+
+The current queue, position, volume, shuffle and repeat are saved to `localStorage`, so Attune reopens where you left off.
 
 ## Project layout
 
