@@ -1,0 +1,93 @@
+/*
+ * Design tokens. The sky sets the palette; everything else reads these variables.
+ * Default (no data-sky) is night, so the first paint is never a white flash.
+ */
+:root {
+  /* Type */
+  --font-sans: "Bricolage Grotesque Variable", system-ui, sans-serif;
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.25rem;
+  --text-xl: 1.5625rem;
+  --text-2xl: 1.953rem;
+  --text-3xl: clamp(2.441rem, 6vw, 3.815rem);
+
+  /* Space (4px base) */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+
+  /* Shape: radius grows with the size of the thing */
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+  --radius-full: 999px;
+
+  /* Motion */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --duration-fast: 150ms;
+  --duration-sky: 2400ms;
+
+  /* Palette: night (default) */
+  --sky-top: #0d1030;
+  --sky-mid: #161a36;
+  --sky-horizon: #2e3270;
+  --glow: #f0a868;
+  --text: #eef0fa;
+  --text-muted: #a3a9cf;
+  --surface: rgb(238 240 250 / 0.06);
+  --surface-strong: rgb(238 240 250 / 0.12);
+  --line: rgb(238 240 250 / 0.14);
+  --accent: #f0a868;
+  --on-accent: #1d1530;
+  --focus: #ffd39c;
+
+  color-scheme: dark;
+}
+
+:root[data-sky="dawn"] {
+  --sky-top: #2b3a78;
+  --sky-mid: #7d6ba8;
+  --sky-horizon: #f4b7a0;
+  --glow: #ffd3a8;
+  --text: #fdf7f4;
+  --text-muted: #e6d6e3;
+  --accent: #ffcfa1;
+  --on-accent: #2b2347;
+  --focus: #fff1dd;
+}
+
+:root[data-sky="day"] {
+  --sky-top: #6fa3e0;
+  --sky-mid: #a9cdf0;
+  --sky-horizon: #e8f2fb;
+  --glow: #fff6d8;
+  --text: #14223d;
+  --text-muted: #44587a;
+  --surface: rgb(255 255 255 / 0.5);
+  --surface-strong: rgb(255 255 255 / 0.75);
+  --line: rgb(20 34 61 / 0.14);
+  --accent: #1f3f8a;
+  --on-accent: #f4f8ff;
+  --focus: #1f3f8a;
+
+  color-scheme: light;
+}
+
+:root[data-sky="dusk"] {
+  --sky-top: #1e2150;
+  --sky-mid: #4b3b7a;
+  --sky-horizon: #e07a5f;
+  --glow: #f6b26b;
+  --text: #fbf3ee;
+  --text-muted: #d4c3d6;
+  --accent: #f6b26b;
+  --on-accent: #251a3a;
+  --focus: #ffd9a8;
+}
