@@ -4,8 +4,9 @@ import Button from './Button.svelte';
 import Controls from './Controls.svelte';
 import Cover from './Cover.svelte';
 import SeekBar from './SeekBar.svelte';
+import Visualizer from './Visualizer.svelte';
 
-let { open = $bindable(false) }: { open?: boolean } = $props();
+let { open = $bindable(false), onsound }: { open?: boolean; onsound: () => void } = $props();
 
 let dialog: HTMLDialogElement;
 
@@ -33,10 +34,23 @@ $effect(() => {
           aria-label="Close player"
           onclick={() => (open = false)}
         />
+        <Button
+          variant="icon"
+          icon="sliders"
+          iconSize={22}
+          aria-label="Sound settings"
+          onclick={onsound}
+        />
       </header>
 
       <div class="art">
         <Cover coverId={track.coverId} size={420} fluid />
+      </div>
+
+      <div class="horizon">
+        {#if open}
+          <Visualizer />
+        {/if}
       </div>
 
       <div class="info">
@@ -85,7 +99,13 @@ $effect(() => {
 
 header {
   display: flex;
-  margin-inline-start: calc(var(--space-3) * -1);
+  justify-content: space-between;
+  margin-inline: calc(var(--space-3) * -1);
+}
+
+.horizon {
+  height: 64px;
+  margin-block: calc(var(--space-4) * -1);
 }
 
 .art {
