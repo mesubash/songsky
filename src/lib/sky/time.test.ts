@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { skyForHour } from './sky';
+import { skyForHour } from './time';
 
 describe('skyForHour', () => {
   it.each([

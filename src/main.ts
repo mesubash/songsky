@@ -1,6 +1,6 @@
 import { mount } from 'svelte';
 import { pwa } from '$lib/pwa.svelte';
-import { applySky, skyForHour } from '$lib/theme/sky';
+import { applySky, skyForHour } from '$lib/sky/time';
 import App from './App.svelte';
 import './styles/base.css';
 
