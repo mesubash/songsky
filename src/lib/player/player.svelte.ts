@@ -197,6 +197,13 @@ class Player {
     this.#applyVolume();
   }
 
+  /** Plays the song at `index` in the current queue (Up next). */
+  async jumpTo(index: number): Promise<void> {
+    if (index < 0 || index >= this.queue.length) return;
+    this.index = index;
+    await this.#load(true);
+  }
+
   /** Moves a song in the queue (or adds it) so it plays right after the current one. */
   playNextUp(id: string): void {
     if (this.queue[this.index + 1] === id) return;
