@@ -5,6 +5,7 @@ import { library } from '$lib/library/library.svelte';
 import { memory } from '$lib/memory/memory.svelte';
 import { player } from '$lib/player/player.svelte';
 import { view } from '$lib/view.svelte';
+import DiscoverView from './ui/DiscoverView.svelte';
 import EmptyState from './ui/EmptyState.svelte';
 import Header from './ui/Header.svelte';
 import LibraryView from './ui/LibraryView.svelte';
@@ -72,13 +73,13 @@ function ondrop(event: DragEvent) {
   <Header />
   <main>
     {#if ready}
-      {#if library.tracks.length > 0}
-        <ViewTabs />
-        {#if view.current === 'memories'}
-          <MemoriesView />
-        {:else}
-          <LibraryView />
-        {/if}
+      <ViewTabs />
+      {#if view.current === 'discover'}
+        <DiscoverView />
+      {:else if view.current === 'memories'}
+        <MemoriesView />
+      {:else if library.tracks.length > 0}
+        <LibraryView />
       {:else}
         <EmptyState />
       {/if}

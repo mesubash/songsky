@@ -4,10 +4,13 @@ import { library } from '$lib/library/library.svelte';
 import type { Track } from '$lib/library/types';
 import { player } from '$lib/player/player.svelte';
 import Cover from './Cover.svelte';
+import Icon from './Icon.svelte';
 
 let { tracks }: { tracks: Track[] } = $props();
 
 const ids = $derived(tracks.map((t) => t.id));
+/** Streamed songs get Save and Audius buttons; keep the space so columns line up. */
+const hasStreams = $derived(tracks.some((t) => t.source === 'stream'));
 </script>
 
 <ol class="list">
@@ -45,6 +48,38 @@ const ids = $derived(tracks.map((t) => t.id));
         </span>
         <span class="duration">{track.duration ? formatTime(track.duration) : ''}</span>
       </button>
+      {#if hasStreams}
+        <span class="actions">
+          {#if track.source === 'stream'}
+            {@const saved = library.isSaved(track.id)}
+            <button
+              class="action"
+              class:on={saved}
+              type="button"
+              aria-pressed={saved}
+              aria-label={saved
+                ? `Remove ${track.title} from your library`
+                : `Save ${track.title} to your library`}
+              title={saved ? 'Saved to your library' : 'Save to your library'}
+              onclick={() => (saved ? library.remove(track.id) : library.save(track))}
+            >
+              <Icon name="heart" size={18} />
+            </button>
+            {#if track.link}
+              <a
+                class="action link"
+                href={track.link}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Open {track.title} by {track.artist} on Audius"
+                title="Open on Audius"
+              >
+                <Icon name="external" size={16} />
+              </a>
+            {/if}
+          {/if}
+        </span>
+      {/if}
     </li>
   {/each}
 </ol>
@@ -56,12 +91,16 @@ const ids = $derived(tracks.map((t) => t.id));
 }
 
 li {
+  display: flex;
+  align-items: center;
   /* Off-screen rows skip layout and paint, so long libraries stay smooth. */
   content-visibility: auto;
   contain-intrinsic-size: auto 60px;
 }
 
 .row {
+  flex: 1;
+  min-width: 0;
   display: grid;
   grid-template-columns: 2.5rem auto minmax(0, 2fr) minmax(0, 1.2fr) 6rem 4rem;
   align-items: center;
@@ -156,6 +195,37 @@ li {
   animation-play-state: paused;
 }
 
+.actions {
+  display: flex;
+  flex: none;
+  width: 88px;
+  justify-content: flex-end;
+}
+
+.action {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: var(--text-muted);
+}
+
+.action:hover {
+  background: var(--surface);
+  color: var(--text);
+}
+
+.action.on {
+  color: var(--accent);
+}
+
+.action.on :global(path) {
+  fill: currentColor;
+}
+
 @keyframes bounce {
   from {
     transform: scaleY(0.25);
@@ -193,6 +263,14 @@ li {
 }
 
 @media (max-width: 720px) {
+  .actions {
+    width: 44px;
+  }
+
+  .action.link {
+    display: none;
+  }
+
   .row {
     grid-template-columns: auto minmax(0, 1fr) auto;
     gap: var(--space-3);

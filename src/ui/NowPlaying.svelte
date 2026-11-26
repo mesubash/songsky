@@ -75,7 +75,14 @@ async function makeArt() {
 
       <div class="info">
         <h2 class="title">{track.title}</h2>
-        <p class="artist">{track.artist}{track.album ? `, ${track.album}` : ''}</p>
+        <p class="artist">
+          {#if track.artistLink}
+            <a href={track.artistLink} target="_blank" rel="noopener noreferrer">{track.artist}</a>
+            <span class="source">on Audius</span>
+          {:else}
+            {track.artist}{track.album ? `, ${track.album}` : ''}
+          {/if}
+        </p>
       </div>
 
       <SeekBar />
@@ -152,6 +159,15 @@ header {
 .title {
   font-size: var(--text-xl);
   letter-spacing: -0.02em;
+}
+
+.artist a {
+  color: var(--text);
+  text-underline-offset: 3px;
+}
+
+.source {
+  color: var(--text-muted);
 }
 
 .artist {

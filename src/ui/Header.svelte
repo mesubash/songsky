@@ -1,5 +1,6 @@
 <script lang="ts">
 import { library } from '$lib/library/library.svelte';
+import { player } from '$lib/player/player.svelte';
 import { together } from '$lib/together/together.svelte';
 import Button from './Button.svelte';
 import Logo from './Logo.svelte';
@@ -14,7 +15,7 @@ import TogetherButton from './TogetherButton.svelte';
 
   <div class="actions">
     <SkyControl />
-    {#if library.tracks.length > 0 || together.invite}
+    {#if library.tracks.length > 0 || player.current || together.invite}
       <TogetherButton />
     {/if}
     {#if library.tracks.length > 0}

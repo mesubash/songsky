@@ -71,6 +71,14 @@ const ICONS = {
   },
   send: { d: 'M4 12 20 4l-6 16-3-7zM11 13l9-9', fill: false },
   copy: { d: 'M9 9h11v11H9zM5 15H4V4h11v1', fill: false },
+  heart: {
+    d: 'M12 20s-7-4.4-9.2-8.7C1.3 8.4 3 5 6.4 5c2 0 3.4 1.1 4.1 2.3h3c.7-1.2 2.1-2.3 4.1-2.3C21 5 22.7 8.4 21.2 11.3 19 15.6 12 20 12 20z',
+    fill: false,
+  },
+  external: {
+    d: 'M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5',
+    fill: false,
+  },
   disc: {
     d: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4z',
     fill: false,
