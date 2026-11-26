@@ -94,3 +94,73 @@ export function targetPosition(state: NowPlaying, localNow: number, offset: numb
 export function needsSeek(current: number, target: number): boolean {
   return Math.abs(current - target) > DRIFT_TOLERANCE;
 }
+
+export interface SongInfo {
+  key: string;
+  title: string;
+  artist: string;
+}
+
+export interface SongRequest extends SongInfo {
+  /** Peer ids of everyone who asked for it. */
+  votes: string[];
+  at: number;
+}
+
+export const MAX_CATALOG = 5000;
+
+export function readSongInfo(data: unknown): SongInfo | null {
+  if (typeof data !== 'object' || data === null) return null;
+  const { key, title, artist } = data as Record<string, unknown>;
+  if (typeof key !== 'string' || typeof title !== 'string' || typeof artist !== 'string')
+    return null;
+  return { key: key.slice(0, 200), title: title.slice(0, 200), artist: artist.slice(0, 200) };
+}
+
+export function readCatalog(data: unknown): SongInfo[] {
+  if (!Array.isArray(data)) return [];
+  return data
+    .slice(0, MAX_CATALOG)
+    .map(readSongInfo)
+    .filter((song): song is SongInfo => song !== null);
+}
+
+export function readRequests(data: unknown): SongRequest[] {
+  if (!Array.isArray(data)) return [];
+  return data.slice(0, 50).flatMap((item) => {
+    const info = readSongInfo(item);
+    const { votes, at } = (item ?? {}) as Record<string, unknown>;
+    if (!info || !Array.isArray(votes) || !isFiniteNumber(at)) return [];
+    return [
+      { ...info, votes: votes.filter((v): v is string => typeof v === 'string').slice(0, 100), at },
+    ];
+  });
+}
+
+/** Adds one vote per person, keeping the most wanted (then oldest) request first. */
+export function addVote(
+  requests: readonly SongRequest[],
+  song: SongInfo,
+  voter: string,
+  now: number,
+): SongRequest[] {
+  const existing = requests.find((r) => r.key === song.key);
+  const next = existing
+    ? requests.map((r) =>
+        r.key === song.key && !r.votes.includes(voter) ? { ...r, votes: [...r.votes, voter] } : r,
+      )
+    : [...requests, { ...song, votes: [voter], at: now }];
+  return next.sort((a, b) => b.votes.length - a.votes.length || a.at - b.at);
+}
+
+/** Search the host's songs by title or artist. */
+export function searchCatalog(catalog: readonly SongInfo[], query: string, limit = 8): SongInfo[] {
+  const words = query.toLowerCase().split(/\s+/).filter(Boolean);
+  if (words.length === 0) return [];
+  return catalog
+    .filter((song) => {
+      const text = `${song.title} ${song.artist}`.toLowerCase();
+      return words.every((word) => text.includes(word));
+    })
+    .slice(0, limit);
+}

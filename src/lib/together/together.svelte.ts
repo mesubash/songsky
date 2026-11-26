@@ -3,6 +3,7 @@ import type { MessageAction, RequestAction, Room } from 'trystero';
 import { library } from '$lib/library/library.svelte';
 import { player } from '$lib/player/player.svelte';
 import {
+  addVote,
   type ChatMessage,
   clockOffset,
   MAX_CHAT_LENGTH,
@@ -11,9 +12,14 @@ import {
   needsSeek,
   parseSession,
   randomId,
+  readCatalog,
   readChat,
   readNowPlaying,
+  readRequests,
+  readSongInfo,
   type SessionKey,
+  type SongInfo,
+  type SongRequest,
   sessionLink,
   targetPosition,
 } from './sync';
@@ -25,25 +31,14 @@ const MAX_SONG_BYTES = 80 * 1024 * 1024;
 const MAX_MESSAGES = 100;
 const NAME_KEY = 'attune:name';
 
-interface SongInfo {
-  key: string;
-  title: string;
-  artist: string;
-}
-
 interface Actions {
   song: MessageAction<Blob | ArrayBuffer | ArrayBufferView>;
   now: MessageAction<NowPlaying>;
   chat: MessageAction<ChatMessage>;
   clock: RequestAction<number, number>;
-}
-
-function readSongInfo(data: unknown): SongInfo | null {
-  if (typeof data !== 'object' || data === null) return null;
-  const { key, title, artist } = data as Record<string, unknown>;
-  if (typeof key !== 'string' || typeof title !== 'string' || typeof artist !== 'string')
-    return null;
-  return { key: key.slice(0, 200), title: title.slice(0, 200), artist: artist.slice(0, 200) };
+  catalog: MessageAction<SongInfo[]>;
+  request: MessageAction<SongInfo>;
+  requests: MessageAction<SongRequest[]>;
 }
 
 /** A tiny silent clip, played from the Join tap so browsers allow playback later. */
@@ -88,6 +83,10 @@ class Together {
   song = $state<SongInfo | null>(null);
   receiving = $state<number | null>(null);
   guestPlaying = $state(false);
+  /** Songs people asked for, most votes first. The host plays the top one next. */
+  requests = $state<SongRequest[]>([]);
+  /** Guest only: the host's songs, for searching and requesting. */
+  catalog = $state<SongInfo[]>([]);
 
   #room: Room | null = null;
   #actions: Actions | null = null;
@@ -166,8 +165,27 @@ class Together {
     this.link = null;
     this.listeners = 0;
     this.messages = [];
+    this.requests = [];
+    this.catalog = [];
     this.song = null;
     this.receiving = null;
+  }
+
+  /** Ask for a song (guests) or add it to the requests (host). Asking again adds no extra vote. */
+  async requestSong(song: SongInfo): Promise<void> {
+    if (this.role === 'host') this.#vote(song, 'host');
+    else await this.#actions?.request.send({ ...song }).catch(() => {});
+  }
+
+  #vote(song: SongInfo, voter: string): void {
+    this.requests = addVote(this.requests, song, voter, Date.now());
+    const top = this.requests[0];
+    if (top && top.key !== player.current?.id) player.playNextUp(top.key);
+    this.#shareRequests();
+  }
+
+  #shareRequests(): void {
+    void this.#actions?.requests.send($state.snapshot(this.requests)).catch(() => {});
   }
 
   async sendChat(text: string): Promise<void> {
@@ -190,6 +208,9 @@ class Together {
       now: room.makeAction<NowPlaying>('now'),
       chat: room.makeAction<ChatMessage>('chat'),
       clock: room.makeAction<number, number>('clock', { kind: 'request' }),
+      catalog: room.makeAction<SongInfo[]>('catalog'),
+      request: room.makeAction<SongInfo>('request'),
+      requests: room.makeAction<SongRequest[]>('requests'),
     };
     this.#room = room;
     this.#actions = actions;
@@ -203,6 +224,15 @@ class Together {
       if (role === 'host') {
         void this.#sendSong(peerId);
         void this.#broadcast(peerId);
+        const catalog = library.tracks.map((t) => ({
+          key: t.id,
+          title: t.title,
+          artist: t.artist,
+        }));
+        void actions.catalog.send(catalog, { target: peerId }).catch(() => {});
+        void actions.requests
+          .send($state.snapshot(this.requests), { target: peerId })
+          .catch(() => {});
       }
     });
     room.onPeerLeave(countPeers);
@@ -220,16 +250,37 @@ class Together {
 
   #startHosting(actions: Actions): void {
     actions.clock.onRequest(() => Date.now());
+    actions.request.onMessage((data, { peerId }) => {
+      const asked = readSongInfo(data);
+      const track = asked && library.byId.get(asked.key);
+      if (!track) return; // Only songs the host actually has.
+      this.#vote({ key: track.id, title: track.title, artist: track.artist }, peerId);
+    });
     this.#timer = setInterval(() => void this.#broadcast(null), BROADCAST_MS);
     // Send each new song to everyone as soon as it starts.
     this.#stopWatching = $effect.root(() => {
       $effect(() => {
-        if (player.current?.id) untrack(() => void this.#sendSong(null));
+        const id = player.current?.id;
+        if (!id) return;
+        untrack(() => {
+          void this.#sendSong(null);
+          // A request that has started playing is done.
+          if (this.requests.some((r) => r.key === id)) {
+            this.requests = this.requests.filter((r) => r.key !== id);
+            this.#shareRequests();
+          }
+        });
       });
     });
   }
 
   #startListening(actions: Actions): void {
+    actions.catalog.onMessage((data) => {
+      this.catalog = readCatalog(data);
+    });
+    actions.requests.onMessage((data) => {
+      this.requests = readRequests(data);
+    });
     actions.song.onReceive(({ byteLength }) => byteLength <= MAX_SONG_BYTES);
     actions.song.onReceiveProgress((progress, { metadata }) => {
       const info = readSongInfo(metadata);
