@@ -18,6 +18,13 @@ export interface Track {
   source: TrackSource;
   handle?: FileSystemFileHandle;
   addedAt: number;
+  /** Set once the song has been analysed, even if tempo or key couldn't be found. */
+  analyzedAt?: number;
+  bpm?: number;
+  /** e.g. "A minor". */
+  key?: string;
+  /** DJ key code, e.g. "8A". */
+  camelot?: string;
 }
 
 export interface PlayRecord {

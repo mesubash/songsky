@@ -178,6 +178,14 @@ class Library {
     await (await db()).put('tracks', $state.snapshot(track) as Track);
   }
 
+  /** Saves tempo and key results onto a track. */
+  async setAnalysis(id: string, result: Pick<Track, 'bpm' | 'key' | 'camelot'>): Promise<void> {
+    const track = this.byId.get(id);
+    if (!track) return;
+    Object.assign(track, result, { analyzedAt: Date.now() });
+    await (await db()).put('tracks', $state.snapshot(track) as Track);
+  }
+
   async clear(): Promise<void> {
     const database = await db();
     const stores = ['tracks', 'covers', 'files', 'folders', 'history'] as const;

@@ -1,4 +1,5 @@
 import { mount } from 'svelte';
+import { analyzer } from '$lib/analysis/analyzer.svelte';
 import { startSongprints } from '$lib/art/art.svelte';
 import { pwa } from '$lib/pwa.svelte';
 import { sky } from '$lib/sky/sky.svelte';
@@ -14,3 +15,4 @@ export default mount(App, { target });
 
 pwa.start();
 startSongprints();
+analyzer.start();
