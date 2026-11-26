@@ -231,6 +231,8 @@ async function shareApp() {
 
 const CREDITS: { name: string; what: string; url: string }[] = [
   { name: 'Audius', what: 'Free music in Discover', url: 'https://audius.co' },
+  { name: 'Jamendo', what: 'Creative Commons music', url: 'https://www.jamendo.com' },
+  { name: 'Radio Browser', what: 'Live radio stations', url: 'https://www.radio-browser.info' },
   { name: 'Open-Meteo', what: 'Weather', url: 'https://open-meteo.com' },
   { name: 'BigDataCloud', what: 'Town names', url: 'https://www.bigdatacloud.com' },
   {
@@ -421,7 +423,10 @@ const CREDITS: { name: string; what: string; url: string }[] = [
             <div class="row">
               <div class="text">
                 <p class="name">Jamendo</p>
-                <p class="desc">Creative Commons music shared by its artists.</p>
+                <p class="desc">
+                  Creative Commons music shared by its artists, mixed into For you, Genres and
+                  search. Plays without the equalizer and crossfade.
+                </p>
               </div>
               <Switch
                 bare
@@ -536,7 +541,7 @@ const CREDITS: { name: string; what: string; url: string }[] = [
           <div class="row">
             <div class="text">
               <p class="name">What you search or play in Discover</p>
-              <p class="desc">Sent to Audius, which hosts that music.</p>
+              <p class="desc">Sent to Audius or Jamendo, which host that music.</p>
             </div>
           </div>
           <div class="row">

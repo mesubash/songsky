@@ -29,6 +29,8 @@ const icon = $derived.by((): IconName => {
   return ICONS[condition];
 });
 
+const TIME_LABELS = { dawn: 'Dawn', day: 'Daytime', dusk: 'Dusk', night: 'Night' } as const;
+
 const summary = $derived(
   sky.weather ? `${sky.weather.label}, ${sky.weather.temperature}°` : 'Match my sky',
 );
@@ -105,16 +107,27 @@ function closeOnBackdrop(event: MouseEvent) {
       />
     </header>
 
-    <p class="status" aria-live="polite">
-      {#if sky.loading}
-        Checking the sky…
-      {:else if sky.weather && sky.place}
-        <strong>{sky.weather.label}, {sky.weather.temperature}°</strong>
-        {sky.source === 'location' ? 'where you are' : `in ${sky.place.name}`}.
-      {:else}
-        Songsky is following the time of day. Add your weather to tint the sky and suggest a sound.
-      {/if}
-    </p>
+    <!-- The sky right now: its icon, the weather or time of day, and the place it's for. -->
+    <div class="now" aria-live="polite">
+      <span class="now-icon" aria-hidden="true"><Icon name={icon} size={28} /></span>
+      <div class="now-text">
+        {#if sky.loading}
+          <p class="now-main">Checking the sky…</p>
+        {:else if sky.weather && sky.place}
+          <p class="now-main">{sky.weather.label}, {sky.weather.temperature}°</p>
+          <p class="now-sub">
+            {TIME_LABELS[sky.time]} in {sky.place.name}{sky.source === 'location'
+              ? ' (your location)'
+              : ''}
+          </p>
+        {:else}
+          <p class="now-main">{TIME_LABELS[sky.time]}</p>
+          <p class="now-sub">
+            Following the time of day. Add your weather to tint the sky and suggest a sound.
+          </p>
+        {/if}
+      </div>
+    </div>
 
     {#if sky.error}
       <p class="error">{sky.error}</p>
@@ -130,7 +143,7 @@ function closeOnBackdrop(event: MouseEvent) {
     {/if}
 
     <Button icon="pin" onclick={() => sky.useLocation()} disabled={sky.loading}>
-      Use my location
+      {sky.source === 'location' ? 'Update my location' : 'Use my location'}
     </Button>
 
     <form class="search" onsubmit={search}>
@@ -234,12 +247,40 @@ h2 {
   letter-spacing: -0.02em;
 }
 
-.status {
-  color: var(--text-muted);
+.now {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--surface);
 }
 
-.status strong {
+.now-icon {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: var(--surface-strong);
   color: var(--text);
+}
+
+.now-text {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.now-main {
+  font-size: var(--text-lg);
+  font-weight: 650;
+}
+
+.now-sub {
+  color: var(--text-muted);
+  font-size: var(--text-sm);
 }
 
 .suggestion {

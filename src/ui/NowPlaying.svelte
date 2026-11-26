@@ -1,6 +1,7 @@
 <script lang="ts">
 import { cubicOut } from 'svelte/easing';
 import { fly } from 'svelte/transition';
+import { sourceName } from '$lib/discover/sources';
 import { formatTime } from '$lib/format';
 import { library } from '$lib/library/library.svelte';
 import { player } from '$lib/player/player.svelte';
@@ -149,7 +150,9 @@ const upNext = $derived(
                     <a href={track.artistLink} target="_blank" rel="noopener noreferrer"
                       >{track.artist}</a
                     >
-                    <span class="source">on Audius</span>
+                    {#if sourceName(track)}
+                      <span class="source">on {sourceName(track)}</span>
+                    {/if}
                   {:else}
                     {track.artist}{track.album ? `, ${track.album}` : ''}
                   {/if}

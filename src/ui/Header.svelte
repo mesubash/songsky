@@ -1,10 +1,10 @@
 <script lang="ts">
 import { analyzer } from '$lib/analysis/analyzer.svelte';
+import { discover } from '$lib/discover/discover.svelte';
 import { formatLength } from '$lib/format';
 import { library } from '$lib/library/library.svelte';
 import { memory } from '$lib/memory/memory.svelte';
 import { player } from '$lib/player/player.svelte';
-import { prefs } from '$lib/prefs.svelte';
 import { together } from '$lib/together/together.svelte';
 import { view } from '$lib/view.svelte';
 import Button from './Button.svelte';
@@ -19,7 +19,7 @@ const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
 /** The page you are on, shown in the top bar on desktop. Null on the first screen. */
 const page = $derived.by((): { title: string; subtitle: string } | null => {
   if (view.current === 'discover') {
-    return { title: 'Discover', subtitle: 'Free music from independent artists on Audius' };
+    return { title: 'Discover', subtitle: 'Free music from independent artists' };
   }
   if (view.current === 'settings') {
     return { title: 'Settings', subtitle: 'Changes save as you make them' };
@@ -71,7 +71,7 @@ $effect(() => {
   {/if}
 
   <!-- Each page's own controls (desktop). Phones show them in the page instead. -->
-  {#if view.current === 'discover' && prefs.sources.audius}
+  {#if view.current === 'discover' && discover.hasSongs}
     <div class="header-search"><SearchBox id="header-search" /></div>
   {/if}
 

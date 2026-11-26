@@ -13,7 +13,9 @@ const PICKS = 6;
 // The headline's promise is real: today's picks load right here, ready to play.
 $effect(() => {
   void discover.mood.moods;
-  if (prefs.sources.audius) void discover.refresh();
+  void prefs.sources.audius;
+  void prefs.sources.jamendo;
+  void discover.refresh();
 });
 
 const picks = $derived(discover.forSky.slice(0, PICKS));
@@ -41,7 +43,7 @@ function playFrom(index: number) {
       device.
     </p>
     <div class="actions">
-      {#if prefs.sources.audius}
+      {#if discover.hasSongs}
         <Button variant="primary" icon="play" disabled={!picks.length} onclick={() => playFrom(0)}>
           Play songs for your sky
         </Button>
@@ -56,7 +58,7 @@ function playFrom(index: number) {
     <p class="hint">You can also drop audio files anywhere on this page.</p>
   </div>
 
-  {#if prefs.sources.audius}
+  {#if discover.hasSongs}
     <section class="shelf" aria-labelledby="shelf-title">
       <div class="shelf-head">
         <h3 id="shelf-title">{discover.mood.title}</h3>

@@ -1,12 +1,10 @@
 <script lang="ts">
 import { discover } from '$lib/discover/discover.svelte';
-import { jamendoAvailable } from '$lib/discover/jamendo';
 import { player } from '$lib/player/player.svelte';
-import { type MusicSource, prefs } from '$lib/prefs.svelte';
+import { prefs } from '$lib/prefs.svelte';
 import { type DiscoverTab, view } from '$lib/view.svelte';
 import Button from './Button.svelte';
 import DiscoverGenres from './DiscoverGenres.svelte';
-import DiscoverJamendo from './DiscoverJamendo.svelte';
 import DiscoverPlaylists from './DiscoverPlaylists.svelte';
 import DiscoverRadio from './DiscoverRadio.svelte';
 import type { IconName } from './Icon.svelte';
@@ -15,32 +13,30 @@ import SearchBox from './SearchBox.svelte';
 import TrackList from './TrackList.svelte';
 import TrackSkeleton from './TrackSkeleton.svelte';
 
-// Fetch on open, and again whenever the sky's mood changes.
+// Fetch on open, and again whenever the sky's mood or the music sources change.
 $effect(() => {
   void discover.mood.moods;
-  if (prefs.sources.audius) void discover.refresh();
+  void prefs.sources.audius;
+  void prefs.sources.jamendo;
+  void discover.refresh();
 });
 
-const TABS: { id: DiscoverTab; label: string; icon: IconName; source: MusicSource }[] = [
-  { id: 'for-you', label: 'For you', icon: 'sun', source: 'audius' },
-  { id: 'genres', label: 'Genres', icon: 'disc', source: 'audius' },
-  { id: 'playlists', label: 'Playlists', icon: 'music', source: 'audius' },
-  { id: 'jamendo', label: 'Jamendo', icon: 'heart', source: 'jamendo' },
-  { id: 'radio', label: 'Radio', icon: 'volume', source: 'radio' },
+/** Each tab and whether it has something to show with the sources that are on. */
+const TABS: { id: DiscoverTab; label: string; icon: IconName; on: () => boolean }[] = [
+  { id: 'for-you', label: 'For you', icon: 'sun', on: () => discover.hasSongs },
+  { id: 'genres', label: 'Genres', icon: 'disc', on: () => discover.hasSongs },
+  { id: 'playlists', label: 'Playlists', icon: 'music', on: () => discover.useAudius },
+  { id: 'radio', label: 'Radio', icon: 'volume', on: () => prefs.sources.radio },
 ];
 
-/** The Jamendo tab shows only when Songsky's server has a Jamendo key. */
-let hasJamendo = $state(false);
-$effect(() => {
-  void jamendoAvailable().then((ok) => {
-    hasJamendo = ok;
-  });
-});
+/** Tabs with a source turned on (Settings > Music sources). */
+const tabs = $derived(TABS.filter((t) => t.on()));
 
-/** Tabs whose music source is on (Settings > Music sources). */
-const tabs = $derived(
-  TABS.filter((t) => prefs.sources[t.source] && (t.id !== 'jamendo' || hasJamendo)),
-);
+/** Song sources in use, credited at the bottom of the page. */
+const SOURCES = [
+  { name: 'Audius', url: 'https://audius.co', on: () => discover.useAudius },
+  { name: 'Jamendo', url: 'https://www.jamendo.com', on: () => discover.useJamendo },
+];
 /** The open tab, or the first one left when the open tab's source was turned off. */
 const tab = $derived(tabs.find((t) => t.id === view.discoverTab)?.id ?? tabs[0]?.id);
 const tabHref = (id: DiscoverTab) => (id === tabs[0]?.id ? '#discover' : `#discover/${id}`);
@@ -58,9 +54,9 @@ function playAll(ids: string[], shuffle = false) {
   <div class="head">
     <div class="desktop-title">
       <h2 id="discover-title" class="title">Discover</h2>
-      <p class="meta">Free music from independent artists on Audius.</p>
+      <p class="meta">Free music from independent artists.</p>
     </div>
-    {#if prefs.sources.audius}
+    {#if discover.hasSongs}
       <div class="page-search"><SearchBox id="discover-search" /></div>
     {/if}
   </div>
@@ -82,8 +78,6 @@ function playAll(ids: string[], shuffle = false) {
     <DiscoverGenres />
   {:else if tab === 'playlists'}
     <DiscoverPlaylists />
-  {:else if tab === 'jamendo'}
-    <DiscoverJamendo />
   {:else if tab === 'radio'}
     <DiscoverRadio />
   {:else}
@@ -120,42 +114,77 @@ function playAll(ids: string[], shuffle = false) {
       {#if discover.skyStatus === 'loading' && !discover.forSky.length}
         <TrackSkeleton label="Finding songs for your sky" />
       {:else if discover.skyStatus === 'error'}
-        <p class="note">Couldn’t reach Audius. Check your connection and open Discover again.</p>
+        <p class="note">Couldn’t reach the music library. Check your connection and try again.</p>
       {:else}
         <TrackList tracks={discover.forSky} />
       {/if}
     </section>
 
-    <section class="block" aria-labelledby="trending-title">
-      <div class="block-head">
-        <h3 id="trending-title">Trending this week</h3>
-        <Button
-          icon="shuffle"
-          disabled={!discover.trending.length}
-          onclick={() =>
-            playAll(
-              discover.trending.map((t) => t.id),
-              true,
-            )}
-        >
-          Shuffle
-        </Button>
-      </div>
-      {#if discover.trendingStatus === 'loading' && !discover.trending.length}
-        <TrackSkeleton label="Loading trending songs" />
-      {:else if discover.trendingStatus === 'error'}
-        <p class="note">Couldn’t reach Audius. Check your connection and open Discover again.</p>
-      {:else}
-        <TrackList tracks={discover.trending} />
-      {/if}
-    </section>
+    {#if discover.useAudius}
+      <section class="block" aria-labelledby="trending-title">
+        <div class="block-head">
+          <h3 id="trending-title">Trending this week</h3>
+          <Button
+            icon="shuffle"
+            disabled={!discover.trending.length}
+            onclick={() =>
+              playAll(
+                discover.trending.map((t) => t.id),
+                true,
+              )}
+          >
+            Shuffle
+          </Button>
+        </div>
+        {#if discover.trendingStatus === 'loading' && !discover.trending.length}
+          <TrackSkeleton label="Loading trending songs" />
+        {:else if discover.trendingStatus === 'error'}
+          <p class="note">Couldn’t reach the music library. Check your connection and try again.</p>
+        {:else}
+          <TrackList tracks={discover.trending} />
+        {/if}
+      </section>
+    {/if}
+
+    {#if discover.useJamendo && discover.useAudius}
+      <section class="block" aria-labelledby="cc-title">
+        <div class="block-head">
+          <div>
+            <h3 id="cc-title">Free to share</h3>
+            <p class="meta">Popular Creative Commons songs this month.</p>
+          </div>
+          <Button
+            icon="shuffle"
+            disabled={!discover.jamendoPicks.length}
+            onclick={() =>
+              playAll(
+                discover.jamendoPicks.map((t) => t.id),
+                true,
+              )}
+          >
+            Shuffle
+          </Button>
+        </div>
+        {#if discover.jamendoStatus === 'loading' && !discover.jamendoPicks.length}
+          <TrackSkeleton label="Loading Creative Commons songs" />
+        {:else if discover.jamendoStatus === 'error'}
+          <p class="note">Couldn’t load these songs. Check your connection and try again.</p>
+        {:else}
+          <TrackList tracks={discover.jamendoPicks} />
+        {/if}
+      </section>
+    {/if}
   {/if}
 
-  {#if tab === 'for-you' || tab === 'genres' || tab === 'playlists'}
+  {#if discover.hasSongs && tab !== 'radio'}
     <p class="credit">
       <Icon name="music" size={16} />
       Songs stream from
-      <a href="https://audius.co" target="_blank" rel="noopener noreferrer">Audius</a>
+      {#each SOURCES.filter((x) => x.on()) as source, i (source.name)}
+        {i ? ' and ' : ''}<a href={source.url} target="_blank" rel="noopener noreferrer"
+          >{source.name}</a
+        >
+      {/each}
       and belong to their artists. Open a song’s page to follow and support them.
     </p>
   {/if}

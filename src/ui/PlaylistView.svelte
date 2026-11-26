@@ -1,5 +1,8 @@
 <script lang="ts">
 import { searchTracks } from '$lib/discover/audius';
+import { discover } from '$lib/discover/discover.svelte';
+import { jamendoTracks } from '$lib/discover/jamendo';
+import { interleave } from '$lib/discover/sources';
 import { formatLength, formatTime } from '$lib/format';
 import { browse } from '$lib/library/browse';
 import { library } from '$lib/library/library.svelte';
@@ -65,7 +68,7 @@ function removeSong(track: Track) {
   toast.show(`Removed ${track.title} from ${playlist.name}.`);
 }
 
-/* Adding songs: your library matches right away, Audius after a short pause in typing. */
+/* Adding songs: your library matches right away, online music after a short pause in typing. */
 let query = $state('');
 let online = $state<Track[]>([]);
 let searchingOnline = $state(false);
@@ -76,7 +79,7 @@ const fromLibrary = $derived(
     .filter((t) => !inPlaylist.has(t.id))
     .slice(0, 8),
 );
-const fromAudius = $derived(online.filter((t) => !inPlaylist.has(t.id)).slice(0, 8));
+const fromOnline = $derived(online.filter((t) => !inPlaylist.has(t.id)).slice(0, 10));
 
 $effect(() => {
   const q = query.trim();
@@ -88,7 +91,14 @@ $effect(() => {
   let alive = true;
   const timer = setTimeout(async () => {
     try {
-      const found = await searchTracks(q, 10);
+      // Audius and Jamendo, whichever are on, mixed.
+      const results = await Promise.allSettled([
+        discover.useAudius ? searchTracks(q, 10) : Promise.resolve([]),
+        discover.useJamendo
+          ? jamendoTracks({ search: q, order: 'popularity_total' }, 10)
+          : Promise.resolve([]),
+      ]);
+      const found = interleave(...results.map((r) => (r.status === 'fulfilled' ? r.value : [])));
       if (!alive) return;
       library.rememberStreams(found);
       online = found;
@@ -200,7 +210,9 @@ async function add(track: Track) {
             <input
               id="add-search"
               type="search"
-              placeholder="Search for songs to add, from your library or Audius"
+              placeholder={discover.hasSongs
+                ? 'Search for songs to add, from your library or online'
+                : 'Search your library for songs to add'}
               autocomplete="off"
               bind:value={query}
               use:focusWhenAdding
@@ -226,16 +238,16 @@ async function add(track: Track) {
           </ul>
         {/if}
 
-        {#if query.trim().length >= 2}
-          <h4>From Audius</h4>
-          {#if fromAudius.length}
+        {#if query.trim().length >= 2 && discover.hasSongs}
+          <h4>Online</h4>
+          {#if fromOnline.length}
             <ul class="suggestions">
-              {#each fromAudius as track (track.id)}
+              {#each fromOnline as track (track.id)}
                 {@render suggestion(track)}
               {/each}
             </ul>
           {:else}
-            <p class="note">{searchingOnline ? 'Searching…' : 'No songs found on Audius.'}</p>
+            <p class="note">{searchingOnline ? 'Searching…' : 'No songs found online.'}</p>
           {/if}
         {/if}
       </section>

@@ -4,8 +4,8 @@ const PLAYLIST_PREFIX = '#playlist/';
 const SETTINGS_PREFIX = '#settings/';
 const DISCOVER_PREFIX = '#discover/';
 
-export type DiscoverTab = 'for-you' | 'genres' | 'playlists' | 'jamendo' | 'radio';
-const DISCOVER_TABS: DiscoverTab[] = ['for-you', 'genres', 'playlists', 'jamendo', 'radio'];
+export type DiscoverTab = 'for-you' | 'genres' | 'playlists' | 'radio';
+const DISCOVER_TABS: DiscoverTab[] = ['for-you', 'genres', 'playlists', 'radio'];
 
 /** The open Discover tab (`#discover/radio`); "For you" when none is given. */
 const discoverTabFromHash = (): DiscoverTab =>

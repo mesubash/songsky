@@ -2,7 +2,7 @@
 import { discover } from '$lib/discover/discover.svelte';
 import Button from './Button.svelte';
 
-/** Search Audius from anywhere. Results show in Discover. */
+/** Search free music (Audius and Jamendo, whichever are on) from anywhere. Results show in Discover. */
 let { id }: { id: string } = $props();
 
 function submit(event: SubmitEvent) {

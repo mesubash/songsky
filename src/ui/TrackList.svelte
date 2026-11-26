@@ -1,4 +1,5 @@
 <script lang="ts">
+import { sourceName } from '$lib/discover/sources';
 import { formatTime } from '$lib/format';
 import { library } from '$lib/library/library.svelte';
 import type { Track } from '$lib/library/types';
@@ -23,7 +24,7 @@ let {
 } = $props();
 
 const ids = $derived(tracks.map((t) => t.id));
-/** Streamed songs get Save and Audius buttons; keep the space so columns line up. */
+/** Streamed songs get Save and Open buttons; keep the space so columns line up. */
 const hasStreams = $derived(tracks.some((t) => t.source === 'stream'));
 </script>
 
@@ -72,8 +73,8 @@ const hasStreams = $derived(tracks.some((t) => t.source === 'stream'));
               href={track.link}
               target="_blank"
               rel="noopener noreferrer"
-              aria-label="Open {track.title} by {track.artist} on Audius"
-              title="Open on Audius"
+              aria-label="Open {track.title} by {track.artist} on {sourceName(track) ?? 'its site'}"
+              title="Open on {sourceName(track) ?? 'its site'}"
             >
               <Icon name="external" size={16} />
             </a>

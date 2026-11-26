@@ -1,5 +1,8 @@
 <script lang="ts">
 import { type TrendingTime, trending } from '$lib/discover/audius';
+import { discover } from '$lib/discover/discover.svelte';
+import { type JamendoOrder, jamendoTracks } from '$lib/discover/jamendo';
+import { interleave } from '$lib/discover/sources';
 import { library } from '$lib/library/library.svelte';
 import type { Track } from '$lib/library/types';
 import { player } from '$lib/player/player.svelte';
@@ -54,7 +57,7 @@ const cache = new Map<string, Track[]>();
 
 $effect(() => {
   if (!genre) return;
-  const key = `${genre.name}|${time}`;
+  const key = `${genre.name}|${time}|${discover.useAudius}|${discover.useJamendo}`;
   const cached = cache.get(key);
   if (cached) {
     tracks = cached;
@@ -63,23 +66,47 @@ $effect(() => {
   }
   let alive = true;
   status = 'loading';
-  trending(30, time, genre.name)
-    .then((found) => {
-      if (!alive) return;
-      library.rememberStreams(found);
-      cache.set(key, found);
-      tracks = found;
-      status = 'idle';
-    })
-    .catch(() => {
-      if (alive) status = 'error';
-    });
+  const g = genre;
+  // Both sources, mixed: Audius trending in the genre and Jamendo's most played with its tag.
+  Promise.allSettled([
+    discover.useAudius ? trending(30, time, g.name) : Promise.resolve([]),
+    discover.useJamendo
+      ? jamendoTracks({ tags: jamendoTag(g.name), order: JAMENDO_ORDER[time] }, 20)
+      : Promise.resolve([]),
+  ]).then((results) => {
+    if (!alive) return;
+    if (results.every((r) => r.status === 'rejected')) {
+      status = 'error';
+      return;
+    }
+    const found = interleave(...results.map((r) => (r.status === 'fulfilled' ? r.value : [])));
+    library.rememberStreams(found);
+    cache.set(key, found);
+    tracks = found;
+    status = 'idle';
+  });
   return () => {
     alive = false;
   };
 });
 
 const label = (g: (typeof GENRES)[number]) => g.label ?? g.name;
+
+const JAMENDO_ORDER: Record<TrendingTime, JamendoOrder> = {
+  week: 'popularity_week',
+  month: 'popularity_month',
+  year: 'popularity_total',
+  allTime: 'popularity_total',
+};
+
+/** Jamendo's tag for an Audius genre name ("Hip-Hop/Rap" is "hiphop" there). */
+const JAMENDO_TAGS: Record<string, string> = {
+  'Hip-Hop/Rap': 'hiphop',
+  'R&B/Soul': 'rnb',
+  'Drum & Bass': 'drumnbass',
+};
+const jamendoTag = (name: string) =>
+  JAMENDO_TAGS[name] ?? name.toLowerCase().replace(/[^a-z0-9]/g, '');
 </script>
 
 {#if genre}
@@ -88,7 +115,7 @@ const label = (g: (typeof GENRES)[number]) => g.label ?? g.name;
     <div class="genre-head" style:--tint={genre.tint}>
       <div>
         <h3 id="genre-title">{label(genre)}</h3>
-        <p class="meta">Top songs from independent artists on Audius.</p>
+        <p class="meta">Top songs from independent artists.</p>
       </div>
       <div class="genre-actions">
         <fieldset class="times">
@@ -115,7 +142,7 @@ const label = (g: (typeof GENRES)[number]) => g.label ?? g.name;
     {#if status === 'loading' && !tracks.length}
       <TrackSkeleton label="Loading {label(genre)} songs" />
     {:else if status === 'error'}
-      <p class="note">Couldn’t reach Audius. Check your connection and try again.</p>
+      <p class="note">Couldn’t reach the music library. Check your connection and try again.</p>
     {:else if tracks.length}
       <TrackList {tracks} />
     {:else}
