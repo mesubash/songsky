@@ -86,9 +86,13 @@ const hasStreams = $derived(tracks.some((t) => t.source === 'stream'));
   list-style: none;
 }
 
+/* The whole line (song plus its heart and link) highlights together. Rows skip paint
+   when off-screen, which also clips anything drawn outside the line. */
 li {
   display: flex;
   align-items: center;
+  border-radius: var(--radius-md);
+  transition: background-color var(--duration-fast) var(--ease-out);
   /* Off-screen rows skip layout and paint, so long libraries stay smooth. */
   content-visibility: auto;
   contain-intrinsic-size: auto 60px;
@@ -108,14 +112,19 @@ li {
   border-radius: var(--radius-md);
   background: none;
   text-align: start;
-  transition: background-color var(--duration-fast) var(--ease-out);
 }
 
-.row:hover {
+/* Rings sit inside the buttons so the line's clipping never cuts them off. */
+.row:focus-visible,
+.actions :global(:focus-visible) {
+  outline-offset: -2px;
+}
+
+li:hover {
   background: var(--surface);
 }
 
-.current .row {
+li.current {
   background: var(--surface-strong);
 }
 
@@ -212,7 +221,7 @@ li {
 }
 
 .action:hover {
-  background: var(--surface);
+  background: var(--surface-strong);
   color: var(--text);
 }
 
