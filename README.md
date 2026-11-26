@@ -5,7 +5,7 @@
 <h1 align="center">Songsky</h1>
 
 <p align="center">
-  A free web music player for the songs on your device, with a sky that follows your weather and time of day.
+  A free web music player with a sky that follows your weather. Play free music from independent artists, or your own files.
 </p>
 
 <p align="center">
@@ -28,12 +28,13 @@
 
 ---
 
-Most music players either stream from a catalogue or feel like a file browser. Songsky plays the music you already have, keeps it on your device, and adds what a file player usually lacks: a sky that changes with your day, DJ-style mixing, songs that follow your walking pace, and a way to listen with friends in sync. It runs in the browser and installs like an app.
+Most music players either stream from a catalogue or feel like a file browser. Songsky does both: it plays free music from independent artists on [Audius](https://audius.co) and the files already on your device, and adds what neither usually has: a sky that changes with your day and picks music to match, DJ-style mixing, songs that follow your walking pace, and a way to listen with friends in sync. It runs in the browser and installs like an app.
 
 ## What it does
 
 | Feature | What happens |
 | --- | --- |
+| Discover | Free songs from independent artists on Audius: picks for your sky ("For a rainy night"), trending this week, and search. Save the ones you like to your library. |
 | Your own music | Open a folder or pick files. Tags, cover art, your queue and position are remembered next time. |
 | Mood and sky | The theme, the logo and the tab icon follow the time of day and your local weather, with rain or snow on screen and a matching sound suggestion. |
 | Smart mix | Tempo (BPM) and musical key are detected in the background. Mix orders songs so each one flows into the next, and crossfade blends them. |
@@ -49,7 +50,8 @@ On iPhone and iPad the browser stops Web Audio when the screen locks, so Songsky
 
 ## Privacy
 
-- Your music never leaves your device. There is no account and no server.
+- Your music files never leave your device. There is no account and no server.
+- Discover streams songs from Audius; Songsky sends Audius only the search or mood being looked up.
 - Listen together sends songs straight from the host's device to the listeners over an encrypted peer-to-peer connection.
 - The weather lookup sends a location rounded to about 10 km to [Open-Meteo](https://open-meteo.com). Map tiles come from [OpenStreetMap](https://www.openstreetmap.org).
 
@@ -80,6 +82,7 @@ $ pnpm dev
 - Audio runs through two decks for crossfading, then a 5-band EQ and an analyser, all in the Web Audio API.
 - The library lives in IndexedDB. Folders are read through the File System Access API where the browser has it; otherwise files are copied into browser storage.
 - Tempo comes from [web-audio-beat-detector](https://github.com/chrisguttandin/web-audio-beat-detector); the key detector is a small pitch-profile matcher written for Songsky.
+- Discover uses the free [Audius API](https://docs.audius.org), which provides each song's tempo and key, so Mix and Pace match work on streams without downloading them.
 - Listen together uses [Trystero](https://github.com/dmotz/trystero) for WebRTC connections without a server of our own.
 - Heavy parts (tag reading, analysis, the map, peer-to-peer) load only when they are first needed.
 
@@ -97,6 +100,7 @@ More detail is in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 - [x] Pace match
 - [x] Listen together with requests and voting
 - [x] Sleep timer
+- [x] Discover: free music from Audius, picked for your sky
 - [ ] Song journal, focus timer, year in review
 - [ ] Native iOS app (Capacitor) for EQ and crossfade on iPhone
 
