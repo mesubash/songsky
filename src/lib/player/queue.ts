@@ -38,3 +38,16 @@ export function prevIndex(length: number, index: number, repeat: RepeatMode): nu
   if (index > 0) return index - 1;
   return repeat === 'off' ? null : length - 1;
 }
+
+/** Places `id` right after the current song, moving it if it's already queued. */
+export function moveToNext(
+  queue: readonly string[],
+  index: number,
+  id: string,
+): { queue: string[]; index: number } {
+  const current = queue[index];
+  const rest = queue.filter((queued) => queued !== id || queued === current);
+  const at = current === undefined ? -1 : rest.indexOf(current);
+  if (current !== id) rest.splice(at + 1, 0, id);
+  return { queue: rest, index: at };
+}

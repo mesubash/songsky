@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { nextIndex, prevIndex, shuffledWithFirst } from './queue';
+import { moveToNext, nextIndex, prevIndex, shuffledWithFirst } from './queue';
 
 describe('shuffledWithFirst', () => {
   const ids = ['a', 'b', 'c', 'd', 'e'];
@@ -34,4 +34,25 @@ describe('prevIndex', () => {
   it('moves back', () => expect(prevIndex(3, 2, 'off')).toBe(1));
   it('restarts at the start with repeat off', () => expect(prevIndex(3, 0, 'off')).toBeNull());
   it('wraps with repeat all', () => expect(prevIndex(3, 0, 'all')).toBe(2));
+});
+
+describe('moveToNext', () => {
+  it('moves a later song up to play next', () => {
+    expect(moveToNext(['a', 'b', 'c', 'd'], 1, 'd')).toEqual({
+      queue: ['a', 'b', 'd', 'c'],
+      index: 1,
+    });
+  });
+
+  it('moves an earlier song forward and keeps the current one playing', () => {
+    expect(moveToNext(['a', 'b', 'c'], 2, 'a')).toEqual({ queue: ['b', 'c', 'a'], index: 1 });
+  });
+
+  it('adds a song that isn’t queued', () => {
+    expect(moveToNext(['a', 'b'], 0, 'z')).toEqual({ queue: ['a', 'z', 'b'], index: 0 });
+  });
+
+  it('leaves the queue alone for the current song', () => {
+    expect(moveToNext(['a', 'b'], 0, 'a')).toEqual({ queue: ['a', 'b'], index: 0 });
+  });
 });

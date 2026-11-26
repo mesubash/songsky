@@ -5,7 +5,14 @@ import { library } from '$lib/library/library.svelte';
 import type { Track } from '$lib/library/types';
 import { memory } from '$lib/memory/memory.svelte';
 import { isIOS } from '$lib/platform';
-import { nextIndex, prevIndex, REPEAT_ORDER, type RepeatMode, shuffledWithFirst } from './queue';
+import {
+  moveToNext,
+  nextIndex,
+  prevIndex,
+  REPEAT_ORDER,
+  type RepeatMode,
+  shuffledWithFirst,
+} from './queue';
 
 const STORAGE_KEY = 'attune:player';
 /** Pressing previous after this many seconds restarts the song instead. */
@@ -172,6 +179,13 @@ class Player {
     this.muted = !this.muted;
     if (!this.muted && this.volume === 0) this.volume = 0.5;
     this.#applyVolume();
+  }
+
+  /** Moves a song in the queue (or adds it) so it plays right after the current one. */
+  playNextUp(id: string): void {
+    if (this.queue[this.index + 1] === id) return;
+    ({ queue: this.queue, index: this.index } = moveToNext(this.queue, this.index, id));
+    void this.#prepareNext();
   }
 
   toggleShuffle(): void {
