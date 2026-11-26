@@ -4,15 +4,18 @@ import { isAudioFile } from '$lib/library/files';
 import { library } from '$lib/library/library.svelte';
 import { memory } from '$lib/memory/memory.svelte';
 import { player } from '$lib/player/player.svelte';
+import { view } from '$lib/view.svelte';
 import EmptyState from './ui/EmptyState.svelte';
 import Header from './ui/Header.svelte';
 import LibraryView from './ui/LibraryView.svelte';
+import MemoriesView from './ui/MemoriesView.svelte';
 import NowPlaying from './ui/NowPlaying.svelte';
 import PlayerBar from './ui/PlayerBar.svelte';
 import SkyEffects from './ui/SkyEffects.svelte';
 import SoundPanel from './ui/SoundPanel.svelte';
 import StatusMessage from './ui/StatusMessage.svelte';
 import UpdatePrompt from './ui/UpdatePrompt.svelte';
+import ViewTabs from './ui/ViewTabs.svelte';
 
 let ready = $state(false);
 let nowPlayingOpen = $state(false);
@@ -70,7 +73,12 @@ function ondrop(event: DragEvent) {
   <main>
     {#if ready}
       {#if library.tracks.length > 0}
-        <LibraryView />
+        <ViewTabs />
+        {#if view.current === 'memories'}
+          <MemoriesView />
+        {:else}
+          <LibraryView />
+        {/if}
       {:else}
         <EmptyState />
       {/if}
