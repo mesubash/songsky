@@ -1,7 +1,9 @@
 <script lang="ts">
 import { memory } from '$lib/memory/memory.svelte';
 
-/** Turns remembering places on or off: in the page on phones, in the top bar on desktop. */
+/** Turns remembering places on or off. `bare` hides the text (still read by screen readers)
+    where a settings row already says what it does. */
+let { bare = false }: { bare?: boolean } = $props();
 </script>
 
 <label class="switch">
@@ -12,7 +14,7 @@ import { memory } from '$lib/memory/memory.svelte';
     checked={memory.rememberPlaces}
     onchange={(e) => memory.setRememberPlaces(e.currentTarget.checked)}
   >
-  <span>Remember where I listen</span>
+  <span class:visually-hidden={bare}>Remember where I listen</span>
 </label>
 
 <style>
