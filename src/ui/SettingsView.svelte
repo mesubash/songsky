@@ -2,6 +2,7 @@
 import { EQ_PRESETS, type EqPresetId } from '$lib/audio/eq';
 import { CROSSFADE_MAX, sound } from '$lib/audio/sound.svelte';
 import { ask } from '$lib/confirm.svelte';
+import { jamendoAvailable } from '$lib/discover/jamendo';
 import { SHORTCUTS } from '$lib/keys/shortcuts';
 import { library } from '$lib/library/library.svelte';
 import { memory } from '$lib/memory/memory.svelte';
@@ -38,6 +39,13 @@ const SECTIONS: { id: string; label: string; icon: IconName; tint: string; hint:
     icon: 'sliders',
     tint: '#ef4444',
     hint: 'Crossfade and equalizer',
+  },
+  {
+    id: 'sources',
+    label: 'Music sources',
+    icon: 'disc',
+    tint: '#db2777',
+    hint: 'Where Discover finds music',
   },
   {
     id: 'playlists',
@@ -84,6 +92,14 @@ $effect(() => {
 const current = $derived(
   SECTIONS.find((s) => s.id === view.settingsSection) ?? (isWide ? SECTIONS[0] : undefined),
 );
+
+/** Whether Songsky's server has a Jamendo key (see .env.example). */
+let hasJamendo = $state(false);
+$effect(() => {
+  void jamendoAvailable().then((ok) => {
+    hasJamendo = ok;
+  });
+});
 
 const presets = Object.entries(EQ_PRESETS) as [EqPresetId, (typeof EQ_PRESETS)[EqPresetId]][];
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
@@ -381,6 +397,56 @@ const CREDITS: { name: string; what: string; url: string }[] = [
             screen locks.
           </p>
         {/if}
+      {:else if current.id === 'sources'}
+        <p class="note">
+          Turn off a source to hide it from Discover. Songs you saved from it stay in your library.
+        </p>
+        <div class="rows">
+          <div class="row">
+            <div class="text">
+              <p class="name">Audius</p>
+              <p class="desc">
+                Free songs from independent artists: picks for your sky, trending, genres, playlists
+                and search.
+              </p>
+            </div>
+            <Switch
+              bare
+              label="Audius"
+              checked={prefs.sources.audius}
+              onchange={(on) => prefs.setSource('audius', on)}
+            />
+          </div>
+          {#if hasJamendo}
+            <div class="row">
+              <div class="text">
+                <p class="name">Jamendo</p>
+                <p class="desc">Creative Commons music shared by its artists.</p>
+              </div>
+              <Switch
+                bare
+                label="Jamendo"
+                checked={prefs.sources.jamendo}
+                onchange={(on) => prefs.setSource('jamendo', on)}
+              />
+            </div>
+          {/if}
+          <div class="row">
+            <div class="text">
+              <p class="name">Radio</p>
+              <p class="desc">
+                Live stations from the Radio Browser directory. Plays without the equalizer and
+                crossfade.
+              </p>
+            </div>
+            <Switch
+              bare
+              label="Radio"
+              checked={prefs.sources.radio}
+              onchange={(on) => prefs.setSource('radio', on)}
+            />
+          </div>
+        </div>
       {:else if current.id === 'playlists'}
         <div class="pane-actions">
           <Button variant="primary" icon="plus" onclick={newPlaylist}>New playlist</Button>

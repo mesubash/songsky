@@ -2,6 +2,7 @@
 import { discover } from '$lib/discover/discover.svelte';
 import { library } from '$lib/library/library.svelte';
 import { player } from '$lib/player/player.svelte';
+import { prefs } from '$lib/prefs.svelte';
 import { sky } from '$lib/sky/sky.svelte';
 import Button from './Button.svelte';
 import Cover from './Cover.svelte';
@@ -12,7 +13,7 @@ const PICKS = 6;
 // The headline's promise is real: today's picks load right here, ready to play.
 $effect(() => {
   void discover.mood.moods;
-  void discover.refresh();
+  if (prefs.sources.audius) void discover.refresh();
 });
 
 const picks = $derived(discover.forSky.slice(0, PICKS));
@@ -40,9 +41,11 @@ function playFrom(index: number) {
       device.
     </p>
     <div class="actions">
-      <Button variant="primary" icon="play" disabled={!picks.length} onclick={() => playFrom(0)}>
-        Play songs for your sky
-      </Button>
+      {#if prefs.sources.audius}
+        <Button variant="primary" icon="play" disabled={!picks.length} onclick={() => playFrom(0)}>
+          Play songs for your sky
+        </Button>
+      {/if}
       {#if library.canPickFolder}
         <Button icon="folder" onclick={() => library.addFolder()}>Choose a folder</Button>
       {/if}
@@ -53,55 +56,57 @@ function playFrom(index: number) {
     <p class="hint">You can also drop audio files anywhere on this page.</p>
   </div>
 
-  <section class="shelf" aria-labelledby="shelf-title">
-    <div class="shelf-head">
-      <h3 id="shelf-title">{discover.mood.title}</h3>
-      <a href="#discover">See all in Discover</a>
-    </div>
+  {#if prefs.sources.audius}
+    <section class="shelf" aria-labelledby="shelf-title">
+      <div class="shelf-head">
+        <h3 id="shelf-title">{discover.mood.title}</h3>
+        <a href="#discover">See all in Discover</a>
+      </div>
 
-    <ol class="cards" aria-busy={!picks.length}>
-      {#if picks.length}
-        {#each picks as track, i (track.id)}
-          {@const isCurrent = player.current?.id === track.id}
-          <li>
-            <button
-              class="card"
-              class:current={isCurrent}
-              type="button"
-              aria-label="{isCurrent && player.playing
-                ? 'Pause'
-                : 'Play'} {track.title} by {track.artist}"
-              onclick={() => playFrom(i)}
-            >
-              <span class="art">
-                <Cover coverId={track.coverId} artworkUrl={track.artworkUrl} size={240} fluid />
-                <span class="badge" aria-hidden="true">
-                  {#if isCurrent && player.playing}
-                    <span class="bars"><i></i><i></i><i></i></span>
-                  {:else}
-                    <Icon name="play" size={20} />
-                  {/if}
+      <ol class="cards" aria-busy={!picks.length}>
+        {#if picks.length}
+          {#each picks as track, i (track.id)}
+            {@const isCurrent = player.current?.id === track.id}
+            <li>
+              <button
+                class="card"
+                class:current={isCurrent}
+                type="button"
+                aria-label="{isCurrent && player.playing
+                  ? 'Pause'
+                  : 'Play'} {track.title} by {track.artist}"
+                onclick={() => playFrom(i)}
+              >
+                <span class="art">
+                  <Cover coverId={track.coverId} artworkUrl={track.artworkUrl} size={240} fluid />
+                  <span class="badge" aria-hidden="true">
+                    {#if isCurrent && player.playing}
+                      <span class="bars"><i></i><i></i><i></i></span>
+                    {:else}
+                      <Icon name="play" size={20} />
+                    {/if}
+                  </span>
                 </span>
-              </span>
-              <span class="title">{track.title}</span>
-              <span class="artist">{track.artist}</span>
-            </button>
-          </li>
-        {/each}
-      {:else}
-        {#each Array.from({ length: PICKS }, (_, i) => i) as i (i)}
-          <li class="placeholder" aria-hidden="true">
-            <span class="ph-art"></span>
-            <span class="ph-line"></span>
-            <span class="ph-line short"></span>
-          </li>
-        {/each}
+                <span class="title">{track.title}</span>
+                <span class="artist">{track.artist}</span>
+              </button>
+            </li>
+          {/each}
+        {:else}
+          {#each Array.from({ length: PICKS }, (_, i) => i) as i (i)}
+            <li class="placeholder" aria-hidden="true">
+              <span class="ph-art"></span>
+              <span class="ph-line"></span>
+              <span class="ph-line short"></span>
+            </li>
+          {/each}
+        {/if}
+      </ol>
+      {#if discover.skyStatus === 'error' && !picks.length}
+        <p class="hint">Couldn’t reach the free music library. Check your connection.</p>
       {/if}
-    </ol>
-    {#if discover.skyStatus === 'error' && !picks.length}
-      <p class="hint">Couldn’t reach the free music library. Check your connection.</p>
-    {/if}
-  </section>
+    </section>
+  {/if}
 </section>
 
 <style>

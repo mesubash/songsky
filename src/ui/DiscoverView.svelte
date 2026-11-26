@@ -1,9 +1,12 @@
 <script lang="ts">
 import { discover } from '$lib/discover/discover.svelte';
+import { jamendoAvailable } from '$lib/discover/jamendo';
 import { player } from '$lib/player/player.svelte';
+import { type MusicSource, prefs } from '$lib/prefs.svelte';
 import { type DiscoverTab, view } from '$lib/view.svelte';
 import Button from './Button.svelte';
 import DiscoverGenres from './DiscoverGenres.svelte';
+import DiscoverJamendo from './DiscoverJamendo.svelte';
 import DiscoverPlaylists from './DiscoverPlaylists.svelte';
 import DiscoverRadio from './DiscoverRadio.svelte';
 import type { IconName } from './Icon.svelte';
@@ -15,15 +18,32 @@ import TrackSkeleton from './TrackSkeleton.svelte';
 // Fetch on open, and again whenever the sky's mood changes.
 $effect(() => {
   void discover.mood.moods;
-  void discover.refresh();
+  if (prefs.sources.audius) void discover.refresh();
 });
 
-const TABS: { id: DiscoverTab; label: string; icon: IconName }[] = [
-  { id: 'for-you', label: 'For you', icon: 'sun' },
-  { id: 'genres', label: 'Genres', icon: 'disc' },
-  { id: 'playlists', label: 'Playlists', icon: 'music' },
-  { id: 'radio', label: 'Radio', icon: 'volume' },
+const TABS: { id: DiscoverTab; label: string; icon: IconName; source: MusicSource }[] = [
+  { id: 'for-you', label: 'For you', icon: 'sun', source: 'audius' },
+  { id: 'genres', label: 'Genres', icon: 'disc', source: 'audius' },
+  { id: 'playlists', label: 'Playlists', icon: 'music', source: 'audius' },
+  { id: 'jamendo', label: 'Jamendo', icon: 'heart', source: 'jamendo' },
+  { id: 'radio', label: 'Radio', icon: 'volume', source: 'radio' },
 ];
+
+/** The Jamendo tab shows only when Songsky's server has a Jamendo key. */
+let hasJamendo = $state(false);
+$effect(() => {
+  void jamendoAvailable().then((ok) => {
+    hasJamendo = ok;
+  });
+});
+
+/** Tabs whose music source is on (Settings > Music sources). */
+const tabs = $derived(
+  TABS.filter((t) => prefs.sources[t.source] && (t.id !== 'jamendo' || hasJamendo)),
+);
+/** The open tab, or the first one left when the open tab's source was turned off. */
+const tab = $derived(tabs.find((t) => t.id === view.discoverTab)?.id ?? tabs[0]?.id);
+const tabHref = (id: DiscoverTab) => (id === tabs[0]?.id ? '#discover' : `#discover/${id}`);
 
 const moodWords = $derived(discover.mood.moods.join(', ').toLowerCase());
 
@@ -40,25 +60,31 @@ function playAll(ids: string[], shuffle = false) {
       <h2 id="discover-title" class="title">Discover</h2>
       <p class="meta">Free music from independent artists on Audius.</p>
     </div>
-    <div class="page-search"><SearchBox id="discover-search" /></div>
+    {#if prefs.sources.audius}
+      <div class="page-search"><SearchBox id="discover-search" /></div>
+    {/if}
   </div>
 
   <nav class="tabs" aria-label="Discover">
-    {#each TABS as tab (tab.id)}
-      <a
-        href={tab.id === 'for-you' ? '#discover' : `#discover/${tab.id}`}
-        aria-current={view.discoverTab === tab.id ? 'page' : undefined}
-      >
-        <Icon name={tab.icon} size={16} />{tab.label}
+    {#each tabs as t (t.id)}
+      <a href={tabHref(t.id)} aria-current={tab === t.id ? 'page' : undefined}>
+        <Icon name={t.icon} size={16} />{t.label}
       </a>
     {/each}
   </nav>
 
-  {#if view.discoverTab === 'genres'}
+  {#if !tab}
+    <p class="note">
+      All music sources are off. Turn one on in
+      <a href="#settings/sources">Settings, Music sources</a>.
+    </p>
+  {:else if tab === 'genres'}
     <DiscoverGenres />
-  {:else if view.discoverTab === 'playlists'}
+  {:else if tab === 'playlists'}
     <DiscoverPlaylists />
-  {:else if view.discoverTab === 'radio'}
+  {:else if tab === 'jamendo'}
+    <DiscoverJamendo />
+  {:else if tab === 'radio'}
     <DiscoverRadio />
   {:else}
     {#if discover.results}

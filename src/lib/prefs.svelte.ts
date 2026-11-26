@@ -1,18 +1,32 @@
 const KEY = 'songsky:prefs';
 
+/** Where Discover finds music. Each can be turned off in Settings. */
+export type MusicSource = 'audius' | 'jamendo' | 'radio';
+
 interface SavedPrefs {
   weatherEffects: boolean;
+  sources: Record<MusicSource, boolean>;
 }
+
+const DEFAULTS: SavedPrefs = {
+  weatherEffects: true,
+  sources: { audius: true, jamendo: true, radio: true },
+};
 
 /** Small display preferences, saved on this device. */
 class Prefs {
   /** Rain and snow drawn over the page when the weather has them. */
-  weatherEffects = $state(true);
+  weatherEffects = $state(DEFAULTS.weatherEffects);
+  sources = $state<Record<MusicSource, boolean>>({ ...DEFAULTS.sources });
 
   constructor() {
     try {
       const saved: Partial<SavedPrefs> = JSON.parse(localStorage.getItem(KEY) ?? '{}');
       if (typeof saved.weatherEffects === 'boolean') this.weatherEffects = saved.weatherEffects;
+      for (const source of Object.keys(DEFAULTS.sources) as MusicSource[]) {
+        const on = saved.sources?.[source];
+        if (typeof on === 'boolean') this.sources[source] = on;
+      }
     } catch {
       // Keep the defaults.
     }
@@ -20,8 +34,21 @@ class Prefs {
 
   setWeatherEffects(on: boolean): void {
     this.weatherEffects = on;
+    this.#save();
+  }
+
+  setSource(source: MusicSource, on: boolean): void {
+    this.sources[source] = on;
+    this.#save();
+  }
+
+  #save(): void {
     try {
-      localStorage.setItem(KEY, JSON.stringify({ weatherEffects: on } satisfies SavedPrefs));
+      const saved: SavedPrefs = {
+        weatherEffects: this.weatherEffects,
+        sources: $state.snapshot(this.sources),
+      };
+      localStorage.setItem(KEY, JSON.stringify(saved));
     } catch {
       // Lasts for this visit only.
     }

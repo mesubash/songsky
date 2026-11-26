@@ -4,6 +4,7 @@ import { formatLength } from '$lib/format';
 import { library } from '$lib/library/library.svelte';
 import { memory } from '$lib/memory/memory.svelte';
 import { player } from '$lib/player/player.svelte';
+import { prefs } from '$lib/prefs.svelte';
 import { together } from '$lib/together/together.svelte';
 import { view } from '$lib/view.svelte';
 import Button from './Button.svelte';
@@ -70,7 +71,7 @@ $effect(() => {
   {/if}
 
   <!-- Each page's own controls (desktop). Phones show them in the page instead. -->
-  {#if view.current === 'discover'}
+  {#if view.current === 'discover' && prefs.sources.audius}
     <div class="header-search"><SearchBox id="header-search" /></div>
   {/if}
 
