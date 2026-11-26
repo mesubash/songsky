@@ -4,6 +4,7 @@ import { CROSSFADE_MAX, sound } from '$lib/audio/sound.svelte';
 import { player } from '$lib/player/player.svelte';
 import { formatRemaining } from '$lib/sleep/fade';
 import { sleep } from '$lib/sleep/sleep.svelte';
+import { toast } from '$lib/toast.svelte';
 import Button from './Button.svelte';
 import { modal } from './modal';
 
@@ -43,61 +44,67 @@ function closeOnBackdrop(event: MouseEvent) {
       />
     </header>
 
-    <section class="group" aria-labelledby="sleep-title">
-      <div class="row">
-        <h3 id="sleep-title">Sleep timer</h3>
-        <output aria-live="polite">
-          {#if sleep.finishing}
-            Stops after this song
-          {:else if sleep.endsAt}
-            Stops in {formatRemaining(sleep.endsAt - sleep.now)}
-          {:else}
-            Off
-          {/if}
-        </output>
-      </div>
-      <fieldset class="presets">
-        <legend class="visually-hidden">Stop playing after</legend>
-        {#each [15, 30, 45, 60] as minutes (minutes)}
-          <button type="button" class="chip" onclick={() => sleep.setMinutes(minutes)}>
-            {minutes} min
-          </button>
-        {/each}
-        <button
-          type="button"
-          class="chip"
-          aria-pressed={sleep.finishing}
-          onclick={() => sleep.endOfSong()}
-        >
-          End of song
-        </button>
-        {#if sleep.active}
-          <button type="button" class="chip" onclick={() => sleep.cancel()}>Turn off</button>
-        {/if}
-      </fieldset>
-    </section>
-
-    {#if player.effectsAvailable}
-      <section class="group">
+    <div class="side">
+      <section class="group" aria-labelledby="sleep-title">
         <div class="row">
-          <label for="crossfade">Crossfade</label>
-          <output for="crossfade">{sound.crossfade === 0 ? 'Off' : `${sound.crossfade} s`}</output>
+          <h3 id="sleep-title">Sleep timer</h3>
+          <output aria-live="polite">
+            {#if sleep.finishing}
+              Stops after this song
+            {:else if sleep.endsAt}
+              Stops in {formatRemaining(sleep.endsAt - sleep.now)}
+            {:else}
+              Off
+            {/if}
+          </output>
         </div>
-        <input
-          id="crossfade"
-          class="range"
-          type="range"
-          min="0"
-          max={CROSSFADE_MAX}
-          step="1"
-          value={sound.crossfade}
-          style:--fill="{(sound.crossfade / CROSSFADE_MAX) * 100}%"
-          aria-valuetext={sound.crossfade === 0 ? 'Off' : `${sound.crossfade} seconds`}
-          oninput={(e) => sound.setCrossfade(e.currentTarget.valueAsNumber)}
-        >
-        <p class="help">Songs overlap at the end so there's no silence between them.</p>
+        <fieldset class="presets">
+          <legend class="visually-hidden">Stop playing after</legend>
+          {#each [15, 30, 45, 60] as minutes (minutes)}
+            <button type="button" class="chip" onclick={() => sleep.setMinutes(minutes)}>
+              {minutes} min
+            </button>
+          {/each}
+          <button
+            type="button"
+            class="chip"
+            aria-pressed={sleep.finishing}
+            onclick={() => sleep.endOfSong()}
+          >
+            End of song
+          </button>
+          {#if sleep.active}
+            <button type="button" class="chip" onclick={() => sleep.cancel()}>Turn off</button>
+          {/if}
+        </fieldset>
       </section>
 
+      {#if player.effectsAvailable}
+        <section class="group">
+          <div class="row">
+            <label for="crossfade">Crossfade</label>
+            <output for="crossfade"
+              >{sound.crossfade === 0 ? 'Off' : `${sound.crossfade} s`}</output
+            >
+          </div>
+          <input
+            id="crossfade"
+            class="range"
+            type="range"
+            min="0"
+            max={CROSSFADE_MAX}
+            step="1"
+            value={sound.crossfade}
+            style:--fill="{(sound.crossfade / CROSSFADE_MAX) * 100}%"
+            aria-valuetext={sound.crossfade === 0 ? 'Off' : `${sound.crossfade} seconds`}
+            oninput={(e) => sound.setCrossfade(e.currentTarget.valueAsNumber)}
+          >
+          <p class="help">Songs overlap at the end so there's no silence between them.</p>
+        </section>
+      {/if}
+    </div>
+
+    {#if player.effectsAvailable}
       <section class="group" aria-labelledby="eq-title">
         <h3 id="eq-title">Equalizer</h3>
         <fieldset class="presets">
@@ -136,6 +143,18 @@ function closeOnBackdrop(event: MouseEvent) {
           {/each}
         </div>
       </section>
+
+      <footer>
+        <Button
+          variant="quiet"
+          disabled={sound.isDefault}
+          onclick={() => {
+            sound.reset();
+            toast.show('Sound reset: flat equalizer, 4 s crossfade.');
+          }}
+          >Reset to default</Button
+        >
+      </footer>
     {:else}
       <p class="help">
         On iPhone and iPad, crossfade and the equalizer are off so music keeps playing when the
@@ -163,6 +182,19 @@ function closeOnBackdrop(event: MouseEvent) {
 
 .panel[open] {
   animation: appear 220ms var(--ease-out);
+}
+
+.side {
+  display: grid;
+  align-content: start;
+  gap: var(--space-8);
+}
+
+footer {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--line);
 }
 
 .content {
@@ -302,6 +334,40 @@ output,
   border: 0;
   border-radius: 50%;
   background: var(--text);
+}
+
+/* Wide screens: a roomier two-column panel. Timer and crossfade on the left, a larger
+   equalizer on the right. */
+@media (min-width: 760px) {
+  .panel {
+    width: min(100% - 4rem, 50rem);
+  }
+
+  .content {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr);
+    column-gap: var(--space-12);
+    padding: var(--space-6) var(--space-8) var(--space-8);
+  }
+
+  header,
+  footer,
+  .content > .help {
+    grid-column: 1 / -1;
+  }
+
+  .vertical {
+    height: 220px;
+  }
+
+  .bands {
+    padding: var(--space-4) var(--space-2) 0;
+    border-radius: var(--radius-md);
+    background: var(--surface);
+  }
+
+  .band {
+    padding-bottom: var(--space-3);
+  }
 }
 
 @keyframes appear {

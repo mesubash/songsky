@@ -7,6 +7,8 @@ import PaceButton from './PaceButton.svelte';
 
 /** Play, Shuffle, Mix and Pace for the library: in the page on phones, in the top bar on desktop. */
 const ids = $derived(library.tracks.map((t) => t.id));
+/** A library song is loaded, so the main button pauses or resumes instead of restarting. */
+const fromLibrary = $derived(!!player.current && ids.includes(player.current.id));
 
 /** A mix starting from the playing song, or a random one. */
 function playMix() {
@@ -17,14 +19,38 @@ function playMix() {
 </script>
 
 <div class="library-actions">
-  <Button variant="primary" icon="play" onclick={() => player.playList(ids)}>Play</Button>
-  <Button icon="shuffle" onclick={() => player.shuffleAll(ids)}>Shuffle</Button>
-  <Button
-    icon="disc"
-    title="Play songs in an order that flows: close tempo and matching keys"
-    onclick={playMix}
-    >Mix</Button
-  >
+  {#if fromLibrary}
+    <Button
+      variant="primary"
+      icon={player.playing ? 'pause' : 'play'}
+      onclick={() => player.toggle()}
+      >{player.playing ? 'Pause' : 'Resume'}</Button
+    >
+  {:else}
+    <Button
+      variant="primary"
+      icon="play"
+      title="Play your library from the first song"
+      onclick={() => player.playList(ids)}
+      >Play all</Button
+    >
+  {/if}
+  {#if ids.length > 1}
+    <Button
+      icon="shuffle"
+      title="Play your library in a random order"
+      onclick={() => player.shuffleAll(ids)}
+      >Shuffle</Button
+    >
+  {/if}
+  {#if ids.length > 2}
+    <Button
+      icon="disc"
+      title="Play songs in an order that flows: close tempo and matching keys"
+      onclick={playMix}
+      >Mix</Button
+    >
+  {/if}
   <PaceButton />
 </div>
 

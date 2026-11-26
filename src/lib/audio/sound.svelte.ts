@@ -42,6 +42,18 @@ class Sound {
     this.#save();
   }
 
+  /** True when crossfade and EQ are at their starting values. */
+  get isDefault(): boolean {
+    return this.crossfade === CROSSFADE_DEFAULT && this.eq.every((gain) => gain === 0);
+  }
+
+  /** Back to the starting values: 4 s crossfade and a flat EQ. */
+  reset(): void {
+    this.crossfade = CROSSFADE_DEFAULT;
+    this.eq = EQ_BANDS.map(() => 0);
+    this.#save();
+  }
+
   usePreset(id: EqPresetId): void {
     this.eq = [...EQ_PRESETS[id].gains];
     this.#save();
