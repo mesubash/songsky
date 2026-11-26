@@ -2,6 +2,8 @@
 import { EQ_BANDS, EQ_PRESETS, EQ_RANGE_DB, type EqPresetId } from '$lib/audio/eq';
 import { CROSSFADE_MAX, sound } from '$lib/audio/sound.svelte';
 import { player } from '$lib/player/player.svelte';
+import { formatRemaining } from '$lib/sleep/fade';
+import { sleep } from '$lib/sleep/sleep.svelte';
 import Button from './Button.svelte';
 import { modal } from './modal';
 
@@ -40,6 +42,40 @@ function closeOnBackdrop(event: MouseEvent) {
         onclick={() => (open = false)}
       />
     </header>
+
+    <section class="group" aria-labelledby="sleep-title">
+      <div class="row">
+        <h3 id="sleep-title">Sleep timer</h3>
+        <output aria-live="polite">
+          {#if sleep.finishing}
+            Stops after this song
+          {:else if sleep.endsAt}
+            Stops in {formatRemaining(sleep.endsAt - sleep.now)}
+          {:else}
+            Off
+          {/if}
+        </output>
+      </div>
+      <fieldset class="presets">
+        <legend class="visually-hidden">Stop playing after</legend>
+        {#each [15, 30, 45, 60] as minutes (minutes)}
+          <button type="button" class="chip" onclick={() => sleep.setMinutes(minutes)}>
+            {minutes} min
+          </button>
+        {/each}
+        <button
+          type="button"
+          class="chip"
+          aria-pressed={sleep.finishing}
+          onclick={() => sleep.endOfSong()}
+        >
+          End of song
+        </button>
+        {#if sleep.active}
+          <button type="button" class="chip" onclick={() => sleep.cancel()}>Turn off</button>
+        {/if}
+      </fieldset>
+    </section>
 
     {#if player.effectsAvailable}
       <section class="group">

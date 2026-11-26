@@ -1,5 +1,6 @@
 <script lang="ts">
 import { player } from '$lib/player/player.svelte';
+import { sleep } from '$lib/sleep/sleep.svelte';
 import Button from './Button.svelte';
 import Controls from './Controls.svelte';
 import Cover from './Cover.svelte';
@@ -30,6 +31,17 @@ const progress = $derived(player.duration ? (player.position / player.duration) 
     </div>
 
     <div class="side">
+      {#if sleep.active}
+        <Button
+          variant="icon"
+          icon="moon"
+          iconSize={18}
+          active
+          aria-label="Sleep timer is on"
+          title="Sleep timer is on"
+          onclick={onsound}
+        />
+      {/if}
       <Button
         variant="icon"
         icon="sliders"
