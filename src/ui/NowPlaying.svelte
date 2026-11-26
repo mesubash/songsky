@@ -1,5 +1,7 @@
 <script lang="ts">
+import { canShareArt, shareSongArt } from '$lib/art/art.svelte';
 import { player } from '$lib/player/player.svelte';
+import { toast } from '$lib/toast.svelte';
 import Button from './Button.svelte';
 import Controls from './Controls.svelte';
 import Cover from './Cover.svelte';
@@ -8,6 +10,20 @@ import SeekBar from './SeekBar.svelte';
 import Visualizer from './Visualizer.svelte';
 
 let { open = $bindable(false), onsound }: { open?: boolean; onsound: () => void } = $props();
+
+let making = $state(false);
+const artLabel = canShareArt() ? 'Share song art' : 'Save song art';
+
+async function makeArt() {
+  making = true;
+  try {
+    await shareSongArt();
+  } catch {
+    toast.show('Couldn’t make the song art. Try again.');
+  } finally {
+    making = false;
+  }
+}
 </script>
 
 <!-- Native dialog: focus is trapped and Escape closes it. -->
@@ -27,6 +43,16 @@ let { open = $bindable(false), onsound }: { open?: boolean; onsound: () => void 
           iconSize={26}
           aria-label="Close player"
           onclick={() => (open = false)}
+        />
+        <span class="spacer"></span>
+        <Button
+          variant="icon"
+          icon="share"
+          iconSize={22}
+          aria-label={artLabel}
+          title={artLabel}
+          disabled={making}
+          onclick={makeArt}
         />
         <Button
           variant="icon"
@@ -93,8 +119,12 @@ let { open = $bindable(false), onsound }: { open?: boolean; onsound: () => void 
 
 header {
   display: flex;
-  justify-content: space-between;
+  gap: var(--space-1);
   margin-inline: calc(var(--space-3) * -1);
+}
+
+.spacer {
+  flex: 1;
 }
 
 .horizon {
