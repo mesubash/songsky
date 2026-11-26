@@ -1,2 +1,4 @@
 User-agent: *
 Allow: /
+
+Sitemap: https://songsky.vercel.app/sitemap.xml
