@@ -3,16 +3,25 @@
   <defs>
     <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0" stop-color="#1e2150" />
-      <stop offset=".6" stop-color="#4b3b7a" />
+      <stop offset=".62" stop-color="#4b3b7a" />
       <stop offset="1" stop-color="#e07a5f" />
     </linearGradient>
+    <radialGradient id="glow" cx=".5" cy=".7" r=".6">
+      <stop offset="0" stop-color="#f6b26b" stop-opacity=".55" />
+      <stop offset="1" stop-color="#f6b26b" stop-opacity="0" />
+    </radialGradient>
+    <clipPath id="above"><rect width="64" height="44" /></clipPath>
   </defs>
-  <rect width="64" height="40" fill="url(#sky)" />
-  <rect y="40" width="64" height="24" fill="#161a36" />
-  <path d="M19 40a13 13 0 0 1 26 0z" fill="#f6b26b" />
-  <g stroke="#f6b26b" stroke-width="2.6" stroke-linecap="round">
-    <path d="M21 45.5h22" />
-    <path d="M24.5 50.5h15" opacity=".65" />
-    <path d="M28 55.5h8" opacity=".35" />
+  <rect width="64" height="64" fill="url(#sky)" />
+  <rect width="64" height="64" fill="url(#glow)" />
+  <rect y="44" width="64" height="20" fill="#161a36" />
+  <circle cx="27" cy="44" r="11" fill="#f6b26b" clip-path="url(#above)" />
+  <g fill="none" stroke="#f6b26b" stroke-linecap="round" stroke-width="3.4">
+    <path d="M36.5 44V15" />
+    <path d="M36.5 15c3.5 5.5 10.5 6.5 10.5 14" />
+  </g>
+  <g stroke="#f6b26b" stroke-linecap="round" stroke-width="2.4">
+    <path d="M18 50h18" opacity=".55" />
+    <path d="M22 55h10" opacity=".3" />
   </g>
 </svg>
