@@ -27,6 +27,8 @@ export default defineConfig({
       workbox: {
         // App shell, lazy chunks and fonts are all cached so Songsky opens offline.
         globPatterns: ['**/*.{js,css,html,woff2,svg,png,ico}'],
+        // The social preview is for link previews, not for using the app offline.
+        globIgnores: ['og-image.png'],
       },
     }),
   ],
