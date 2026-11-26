@@ -125,6 +125,7 @@ function ondrop(event: DragEvent) {
   .content {
     width: 100%;
     max-width: calc(var(--content-max) + 2 * var(--gutter));
+    margin-inline: auto;
     padding-inline: var(--gutter);
     padding-bottom: var(--space-12);
   }
