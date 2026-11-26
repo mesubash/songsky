@@ -47,13 +47,15 @@ export async function jamendoTracks(
   {
     search,
     tags,
+    ids,
     order = 'popularity_week',
-  }: { search?: string; tags?: string; order?: JamendoOrder },
+  }: { search?: string; tags?: string; ids?: readonly string[]; order?: JamendoOrder },
   limit = 30,
 ): Promise<Track[]> {
   const params = new URLSearchParams({ order, limit: String(limit) });
   if (search) params.set('search', search);
   if (tags) params.set('tags', tags);
+  if (ids?.length) params.set('ids', ids.join(','));
   const ask = async () => {
     const response = await fetch(`/api/jamendo?${params}`);
     if (!response.ok) throw new Error(`Jamendo request failed: ${response.status}`);

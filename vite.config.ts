@@ -22,6 +22,11 @@ function jamendoProxy(key: string | undefined): Record<string, ProxyOptions> {
       changeOrigin: true,
       rewrite: (path) => {
         const params = new URL(path, 'http://local').searchParams;
+        const ids = params.get('ids');
+        if (ids) {
+          params.set('id', ids.replaceAll(',', '+'));
+          params.delete('ids');
+        }
         params.set('client_id', key);
         params.set('format', 'json');
         params.set('audioformat', 'mp32');

@@ -22,6 +22,7 @@ import PlaylistView from './ui/PlaylistView.svelte';
 import QueuePanel from './ui/QueuePanel.svelte';
 import RadioBar from './ui/RadioBar.svelte';
 import SettingsView from './ui/SettingsView.svelte';
+import SharedPlaylistView from './ui/SharedPlaylistView.svelte';
 import ShortcutsDialog from './ui/ShortcutsDialog.svelte';
 import Sidebar from './ui/Sidebar.svelte';
 import SkyEffects from './ui/SkyEffects.svelte';
@@ -165,6 +166,8 @@ $effect(() => {
           <PlaylistView />
         {:else if view.current === 'settings'}
           <SettingsView />
+        {:else if view.current === 'shared'}
+          <SharedPlaylistView />
         {:else if library.visibleTracks.length > 0}
           <LibraryView />
         {:else}

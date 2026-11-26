@@ -35,7 +35,7 @@ const page = $derived.by((): { title: string; subtitle: string } | null => {
     };
   }
   // A playlist page has its own large heading, so the top bar stays clear.
-  if (view.current === 'playlist') return null;
+  if (view.current === 'playlist' || view.current === 'shared') return null;
   const count = library.visibleTracks.length;
   if (!count) return null;
   const length = library.totalDuration ? `, ${formatLength(library.totalDuration)}` : '';

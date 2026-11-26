@@ -158,6 +158,23 @@ export async function trendingPlaylists(limit = 24): Promise<AudiusPlaylist[]> {
   return body.data.map(readAudiusPlaylist).filter((p): p is AudiusPlaylist => p !== null);
 }
 
+/** Songs by their Audius ids (without the "audius:" prefix), in one request. */
+export function tracksByIds(ids: readonly string[]): Promise<Track[]> {
+  if (!ids.length) return Promise.resolve([]);
+  const query = new URLSearchParams({ app_name: APP_NAME });
+  for (const id of ids) query.append('id', id);
+  return fetch(`${API}/tracks?${query}`)
+    .then((response) => {
+      if (!response.ok) throw new Error(`Audius request failed: ${response.status}`);
+      return response.json() as Promise<{ data?: unknown }>;
+    })
+    .then((body) =>
+      Array.isArray(body.data)
+        ? body.data.map((raw) => readAudiusTrack(raw)).filter((t): t is Track => t !== null)
+        : [],
+    );
+}
+
 export function playlistTracks(id: string): Promise<Track[]> {
   return get(`/playlists/${encodeURIComponent(id)}/tracks`);
 }

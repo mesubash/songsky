@@ -61,6 +61,16 @@ describe('GET /api/jamendo', () => {
     expect(none.headers.get('cache-control')).toBe('public, s-maxage=60');
   });
 
+  it('looks songs up by id, and ignores ids that are not plain numbers', async () => {
+    const fetch = vi.fn(async () => Response.json({ results: [{ id: '1' }] }));
+    vi.stubGlobal('fetch', fetch);
+    const { GET } = await load('test-key');
+    await GET(new Request('https://songsky.test/api/jamendo?ids=12,345'));
+    expect(new URL(String(fetch.mock.calls[0]?.[0])).searchParams.get('id')).toBe('12+345');
+    await GET(new Request('https://songsky.test/api/jamendo?ids=12,abc'));
+    expect(new URL(String(fetch.mock.calls[1]?.[0])).searchParams.has('id')).toBe(false);
+  });
+
   it('drops tags with unexpected characters', async () => {
     const fetch = vi.fn(async () => Response.json({ results: [] }));
     vi.stubGlobal('fetch', fetch);

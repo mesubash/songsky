@@ -1,6 +1,8 @@
 <script lang="ts">
 import { EQ_PRESETS, type EqPresetId } from '$lib/audio/eq';
 import { CROSSFADE_MAX, sound } from '$lib/audio/sound.svelte';
+import { type Backup, parseBackup } from '$lib/backup/backup';
+import { downloadBackup, previewRestore, restoreBackup } from '$lib/backup/restore';
 import { ask } from '$lib/confirm.svelte';
 import { jamendoAvailable } from '$lib/discover/jamendo';
 import { SHORTCUTS } from '$lib/keys/shortcuts';
@@ -69,7 +71,13 @@ const SECTIONS: { id: string; label: string; icon: IconName; tint: string; hint:
     tint: '#10b981',
     hint: 'Places and what leaves your device',
   },
-  { id: 'data', label: 'Your data', icon: 'folder', tint: '#3b82f6', hint: 'Storage and deleting' },
+  {
+    id: 'data',
+    label: 'Your data',
+    icon: 'folder',
+    tint: '#3b82f6',
+    hint: 'Backup, storage and deleting',
+  },
   {
     id: 'keys',
     label: 'Keyboard shortcuts',
@@ -208,6 +216,40 @@ async function deletePlaylist(id: string, name: string) {
   if (!ok) return;
   void playlists.delete(id);
   toast.show(`Deleted ${name}.`);
+}
+
+function backUp() {
+  downloadBackup();
+  toast.show('Backup saved to your downloads.');
+}
+
+let restoreInput = $state<HTMLInputElement>();
+
+async function restore(event: Event & { currentTarget: HTMLInputElement }) {
+  const file = event.currentTarget.files?.[0];
+  event.currentTarget.value = '';
+  if (!file) return;
+  let backup: Backup;
+  try {
+    backup = parseBackup(await file.text());
+  } catch (error) {
+    toast.show(error instanceof Error ? error.message : 'That file isn’t a Songsky backup.');
+    return;
+  }
+  const plan = previewRestore(backup);
+  const parts = [
+    plural(plan.songs.length, 'online song'),
+    plural(plan.playlists.length, 'playlist'),
+    plural(plan.plays.length, 'play'),
+  ];
+  const when = backup.exportedAt ? ` from ${backup.exportedAt.slice(0, 10)}` : '';
+  const ok = await ask({
+    title: `Restore the backup${when}?`,
+    message: `This adds ${parts.join(', ')} and uses the backup’s settings. Nothing on this device is deleted. Songsky reloads afterwards.`,
+    action: 'Restore',
+    tone: 'calm',
+  });
+  if (ok) await restoreBackup(backup);
 }
 
 async function clearHistory() {
@@ -766,6 +808,37 @@ const CREDITS: { name: string; what: string; url: string }[] = [
             {/if}
           </div>
         </div>
+        <h4>Back up and restore</h4>
+        <div class="rows">
+          <div class="row">
+            <div class="text">
+              <p class="name">Back up</p>
+              <p class="desc">
+                Saves your saved online songs, playlists, history and settings to a file. Your own
+                music files aren’t included; their places in playlists are.
+              </p>
+            </div>
+            <Button icon="download" onclick={backUp}>Back up</Button>
+          </div>
+          <div class="row">
+            <div class="text">
+              <p class="name">Restore from a backup</p>
+              <p class="desc">
+                Adds what’s in a backup file to this device. Nothing here is deleted.
+              </p>
+            </div>
+            <Button onclick={() => restoreInput?.click()}>Restore</Button>
+            <input
+              bind:this={restoreInput}
+              class="visually-hidden"
+              type="file"
+              accept="application/json,.json"
+              aria-label="Choose a Songsky backup file"
+              onchange={restore}
+            >
+          </div>
+        </div>
+
         <h4>Delete</h4>
         <div class="rows danger">
           <div class="row">

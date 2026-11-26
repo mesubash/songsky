@@ -1,5 +1,6 @@
 /**
- * GET /api/jamendo: searches Jamendo's free Creative Commons catalogue on Songsky's behalf.
+ * GET /api/jamendo: searches Jamendo's free Creative Commons catalogue on Songsky's behalf,
+ * or looks up songs by id (`ids=1,2,3`, for playlists shared by link).
  *
  * The Jamendo key stays on the server (the JAMENDO_CLIENT_ID environment variable on
  * Vercel), so it never ships in the app's JavaScript. Only track searches with a few
@@ -14,6 +15,8 @@ const ORDERS = new Set([
   'releasedate_desc',
 ]);
 const TAG = /^[a-z0-9+ -]{1,60}$/i;
+/** Up to 50 Jamendo track ids, comma-separated (for playlists shared by link). */
+const IDS = /^\d{1,12}(,\d{1,12}){0,49}$/;
 
 // Typed locally so this file needs no Node type package.
 const env = (globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env;
@@ -55,6 +58,8 @@ export async function GET(request: Request): Promise<Response> {
   if (search) params.set('search', search);
   const tags = incoming.get('tags')?.trim();
   if (tags && TAG.test(tags)) params.set('tags', tags);
+  const ids = incoming.get('ids');
+  if (ids && IDS.test(ids)) params.set('id', ids.replaceAll(',', '+'));
   const order = incoming.get('order');
   params.set('order', order && ORDERS.has(order) ? order : 'popularity_week');
 

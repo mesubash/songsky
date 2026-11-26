@@ -1,4 +1,4 @@
-export type View = 'library' | 'discover' | 'memories' | 'playlist' | 'settings';
+export type View = 'library' | 'discover' | 'memories' | 'playlist' | 'settings' | 'shared';
 
 const PLAYLIST_PREFIX = '#playlist/';
 const SETTINGS_PREFIX = '#settings/';
@@ -13,6 +13,9 @@ const libraryGroupFromHash = (): string => {
   const rest = decodeURIComponent(location.hash.slice(LIBRARY_PREFIX.length));
   return rest.startsWith('folder/') ? `folder:${rest.slice('folder/'.length)}` : rest || 'all';
 };
+
+const sharedFromHash = (): string =>
+  location.hash.startsWith(SHARED_PREFIX) ? location.hash.slice(SHARED_PREFIX.length) : '';
 
 export const libraryHref = (group: string): string =>
   group === 'all'
@@ -33,16 +36,20 @@ const discoverTabFromHash = (): DiscoverTab =>
 const settingsFromHash = (): string | null =>
   location.hash.startsWith(SETTINGS_PREFIX) ? location.hash.slice(SETTINGS_PREFIX.length) : null;
 
+const SHARED_PREFIX = '#shared/';
+
 const fromHash = (): View =>
-  location.hash === '#memories'
-    ? 'memories'
-    : location.hash === '#settings' || location.hash.startsWith(SETTINGS_PREFIX)
-      ? 'settings'
-      : location.hash === '#discover' || location.hash.startsWith(DISCOVER_PREFIX)
-        ? 'discover'
-        : location.hash.startsWith(PLAYLIST_PREFIX)
-          ? 'playlist'
-          : 'library';
+  location.hash.startsWith(SHARED_PREFIX)
+    ? 'shared'
+    : location.hash === '#memories'
+      ? 'memories'
+      : location.hash === '#settings' || location.hash.startsWith(SETTINGS_PREFIX)
+        ? 'settings'
+        : location.hash === '#discover' || location.hash.startsWith(DISCOVER_PREFIX)
+          ? 'discover'
+          : location.hash.startsWith(PLAYLIST_PREFIX)
+            ? 'playlist'
+            : 'library';
 
 const playlistFromHash = (): string | null =>
   location.hash.startsWith(PLAYLIST_PREFIX)
@@ -59,6 +66,8 @@ class ViewState {
   settingsSection = $state<string | null>(settingsFromHash());
   discoverTab = $state<DiscoverTab>(discoverTabFromHash());
   libraryGroup = $state(libraryGroupFromHash());
+  /** The packed playlist in a #shared/… link. */
+  sharedData = $state(sharedFromHash());
 
   constructor() {
     addEventListener('hashchange', () => {
@@ -67,6 +76,7 @@ class ViewState {
       this.settingsSection = settingsFromHash();
       this.discoverTab = discoverTabFromHash();
       this.libraryGroup = libraryGroupFromHash();
+      this.sharedData = sharedFromHash();
     });
   }
 }

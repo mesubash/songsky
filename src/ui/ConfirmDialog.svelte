@@ -38,7 +38,11 @@ function closeOnBackdrop(event: MouseEvent) {
         >
           Cancel
         </button>
-        <button class="danger" type="button" onclick={() => confirmation.answer(true)}>
+        <button
+          class={confirmation.request.tone === 'calm' ? 'calm' : 'danger'}
+          type="button"
+          onclick={() => confirmation.answer(true)}
+        >
           {confirmation.request.action}
         </button>
       </div>
@@ -109,6 +113,11 @@ p {
 
 .danger:hover {
   background: #912018;
+}
+
+.calm {
+  background: var(--accent);
+  color: var(--on-accent);
 }
 
 @keyframes appear {

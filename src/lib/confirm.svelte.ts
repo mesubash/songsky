@@ -3,6 +3,8 @@ export interface ConfirmRequest {
   message: string;
   /** The button that does it, e.g. "Delete playlist". */
   action: string;
+  /** Red for actions that delete; calm for ones that don't (e.g. restoring a backup). */
+  tone?: 'danger' | 'calm';
 }
 
 /** An in-app "are you sure?" that matches Songsky, instead of the browser's own popup.
