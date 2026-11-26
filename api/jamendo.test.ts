@@ -13,6 +13,25 @@ afterEach(() => {
 });
 
 describe('GET /api/jamendo', () => {
+  it('lets only the Android and iPhone apps call it from another origin', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => Response.json({ results: [] })),
+    );
+    const { GET } = await load('test-key');
+    const from = (origin: string) =>
+      GET(new Request('https://songsky.test/api/jamendo?search=rain', { headers: { origin } }));
+    expect((await from('capacitor://localhost')).headers.get('access-control-allow-origin')).toBe(
+      'capacitor://localhost',
+    );
+    expect((await from('https://localhost')).headers.get('access-control-allow-origin')).toBe(
+      'https://localhost',
+    );
+    const other = await from('https://evil.example');
+    expect(other.headers.get('access-control-allow-origin')).toBeNull();
+    expect(other.headers.get('vary')).toBe('origin');
+  });
+
   it('says so when no key is set, without calling Jamendo', async () => {
     const fetch = vi.fn();
     vi.stubGlobal('fetch', fetch);

@@ -1,4 +1,5 @@
 import { registerSW } from 'virtual:pwa-register';
+import { isNative } from '$lib/native';
 import { toast } from '$lib/toast.svelte';
 
 /** The install prompt Chromium browsers offer; not in TypeScript's DOM types yet. */
@@ -14,7 +15,8 @@ class Pwa {
   canInstall = $state(false);
   /** Running as an installed app (its own window, no browser bar). */
   installed = $state(
-    matchMedia('(display-mode: standalone)').matches ||
+    isNative ||
+      matchMedia('(display-mode: standalone)').matches ||
       // iPhone and iPad report the installed app this way instead.
       (navigator as Navigator & { standalone?: boolean }).standalone === true,
   );
@@ -24,6 +26,8 @@ class Pwa {
   #installPrompt: InstallPrompt | null = null;
 
   start(): void {
+    // The app stores its files itself and updates through the app stores.
+    if (isNative) return;
     this.#applyUpdate = registerSW({
       onNeedRefresh: () => {
         this.updateReady = true;

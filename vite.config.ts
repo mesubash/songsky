@@ -62,11 +62,29 @@ export default defineConfig(({ mode }) => {
           name: 'Songsky – Music Player',
           short_name: 'Songsky',
           description:
-            'A free music player for the songs on your device. Works offline and follows your weather, mood and pace.',
+            'A free music player for your own songs and free music from independent artists. Follows your sky, works offline.',
           theme_color: SKY,
           background_color: SKY,
           display: 'standalone',
           categories: ['music', 'entertainment'],
+          // Long-press the app icon to jump straight to a page.
+          shortcuts: [
+            {
+              name: 'Discover',
+              url: '/#discover',
+              icons: [{ src: 'pwa-192x192.png', sizes: '192x192' }],
+            },
+            {
+              name: 'Memories',
+              url: '/#memories',
+              icons: [{ src: 'pwa-192x192.png', sizes: '192x192' }],
+            },
+            {
+              name: 'Library',
+              url: '/#library',
+              icons: [{ src: 'pwa-192x192.png', sizes: '192x192' }],
+            },
+          ],
         },
         workbox: {
           // App shell, lazy chunks and fonts are all cached so Songsky opens offline.

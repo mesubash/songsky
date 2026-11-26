@@ -40,7 +40,19 @@ const clampInt = (value: string | null, min: number, max: number, fallback: numb
   return Number.isFinite(n) ? Math.min(Math.max(n, min), max) : fallback;
 };
 
+/** The Android and iPhone apps load Songsky from these origins, so they may call this API. */
+const APP_ORIGINS = new Set(['https://localhost', 'capacitor://localhost']);
+
 export async function GET(request: Request): Promise<Response> {
+  const response = await answer(request);
+  response.headers.set('vary', 'origin');
+  const origin = request.headers.get('origin');
+  if (origin && APP_ORIGINS.has(origin))
+    response.headers.set('access-control-allow-origin', origin);
+  return response;
+}
+
+async function answer(request: Request): Promise<Response> {
   const key = env?.JAMENDO_CLIENT_ID;
   if (!key) return json({ error: 'not-configured' }, 503, 'no-store');
 

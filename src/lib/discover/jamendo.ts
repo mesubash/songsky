@@ -1,4 +1,5 @@
 import type { Track } from '$lib/library/types';
+import { API_BASE } from '$lib/native';
 import { decodeEntities } from './audius';
 
 /**
@@ -57,7 +58,7 @@ export async function jamendoTracks(
   if (tags) params.set('tags', tags);
   if (ids?.length) params.set('ids', ids.join(','));
   const ask = async () => {
-    const response = await fetch(`/api/jamendo?${params}`);
+    const response = await fetch(`${API_BASE}/api/jamendo?${params}`);
     if (!response.ok) throw new Error(`Jamendo request failed: ${response.status}`);
     const body: { results?: unknown } = await response.json();
     if (!Array.isArray(body.results)) return [];
@@ -71,7 +72,7 @@ export async function jamendoTracks(
 /** True when Songsky's server has a Jamendo key, so the Jamendo tab can show. */
 export async function jamendoAvailable(): Promise<boolean> {
   try {
-    const response = await fetch('/api/jamendo?limit=1');
+    const response = await fetch(`${API_BASE}/api/jamendo?limit=1`);
     // A host without the route may answer with the app's own page, so check for real results.
     if (!response.ok || !response.headers.get('content-type')?.includes('json')) return false;
     const body: { results?: unknown } = await response.json();

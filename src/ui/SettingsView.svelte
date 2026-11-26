@@ -8,6 +8,7 @@ import { jamendoAvailable } from '$lib/discover/jamendo';
 import { SHORTCUTS } from '$lib/keys/shortcuts';
 import { library } from '$lib/library/library.svelte';
 import { memory } from '$lib/memory/memory.svelte';
+import { isNative } from '$lib/native';
 import { installSteps } from '$lib/platform';
 import { player } from '$lib/player/player.svelte';
 import { playlists } from '$lib/playlists/playlists.svelte';
@@ -955,7 +956,7 @@ const CREDITS: { name: string; what: string; url: string }[] = [
           <p class="version">Version {__APP_VERSION__}, built {__BUILD_DATE__}</p>
           <div class="hero-actions">
             {#if pwa.installed}
-              <span class="value">Installed as an app</span>
+              <span class="value">{isNative ? 'The Songsky app' : 'Installed as an app'}</span>
             {:else if pwa.canInstall}
               <Button variant="primary" icon="download" onclick={() => pwa.install()}
                 >Install app</Button
@@ -969,9 +970,11 @@ const CREDITS: { name: string; what: string; url: string }[] = [
                 >Install app</Button
               >
             {/if}
-            <Button disabled={pwa.checking} onclick={() => pwa.checkForUpdates()}
-              >{pwa.checking ? 'Checking…' : 'Check for updates'}</Button
-            >
+            {#if !isNative}
+              <Button disabled={pwa.checking} onclick={() => pwa.checkForUpdates()}
+                >{pwa.checking ? 'Checking…' : 'Check for updates'}</Button
+              >
+            {/if}
             <Button icon="share" onclick={shareApp}>Share Songsky</Button>
           </div>
           {#if showSteps && steps && !pwa.installed}
