@@ -159,7 +159,7 @@ function closeOnBackdrop(event: MouseEvent) {
           aria-label="Message"
           enterkeyhint="send"
         >
-        <Button variant="icon" icon="share" type="submit" aria-label="Send" />
+        <Button variant="icon" icon="send" type="submit" aria-label="Send" />
       </form>
 
       <button class="link-button" type="button" onclick={() => together.leave()}>
