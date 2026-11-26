@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { audiusStreamUrl, isAudiusStreamUrl, readAudiusTrack } from './audius';
+import { audiusStreamUrl, decodeEntities, isAudiusStreamUrl, readAudiusTrack } from './audius';
 
 const raw = {
   id: 'mRaOxp1',
@@ -60,4 +60,15 @@ describe('isAudiusStreamUrl', () => {
     expect(isAudiusStreamUrl('https://api.audius.co/v1/users/abc')).toBe(false);
     expect(isAudiusStreamUrl('not a url')).toBe(false);
   });
+});
+
+describe('decodeEntities', () => {
+  it('decodes the common HTML entities', () => {
+    expect(decodeEntities('Chill &amp; Lofi &quot;Mix&quot; &#39;24')).toBe(
+      'Chill & Lofi "Mix" \'24',
+    );
+  });
+
+  it('leaves other text alone', () =>
+    expect(decodeEntities('AC/DC & friends &copy;')).toBe('AC/DC & friends &copy;'));
 });

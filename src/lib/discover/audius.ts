@@ -28,8 +28,22 @@ export function isAudiusStreamUrl(url: string): boolean {
   }
 }
 
+const ENTITIES: Record<string, string> = {
+  amp: '&',
+  lt: '<',
+  gt: '>',
+  quot: '"',
+  apos: "'",
+  '#39': "'",
+};
+
+/** Some titles arrive HTML-encoded ("Chill &amp; Lofi"); show them as written. */
+export function decodeEntities(value: string): string {
+  return value.replace(/&(amp|lt|gt|quot|apos|#39);/g, (_, name: string) => ENTITIES[name] ?? _);
+}
+
 const text = (value: unknown, max = 200): string | null =>
-  typeof value === 'string' && value.trim() ? value.trim().slice(0, max) : null;
+  typeof value === 'string' && value.trim() ? decodeEntities(value.trim()).slice(0, max) : null;
 const httpsUrl = (value: unknown): string | undefined =>
   typeof value === 'string' && value.startsWith('https://') ? value : undefined;
 
