@@ -24,7 +24,13 @@ class Library {
   progress = $state<ImportProgress | null>(null);
   readonly canPickFolder = canPickFolder;
 
-  byId = $derived(new Map(this.tracks.map((track) => [track.id, track])));
+  /** Streamed songs shown in Discover but not saved, so the player can still find them. */
+  #streams = new SvelteMap<string, Track>();
+
+  /** Every known track: the library plus streamed songs seen in Discover. */
+  byId = $derived(
+    new Map([...this.#streams, ...this.tracks.map((track): [string, Track] => [track.id, track])]),
+  );
   totalDuration = $derived(this.tracks.reduce((sum, track) => sum + track.duration, 0));
 
   /** Files that only live in memory this session (source: 'session'). */
@@ -44,6 +50,41 @@ class Library {
     this.#coverIds = new Set(coverIds);
     // Session-only tracks lost their audio on reload; drop them.
     this.tracks = tracks.filter((track) => track.source !== 'session').sort(compareTracks);
+  }
+
+  /** Makes streamed songs known to the player without adding them to the library. */
+  rememberStreams(tracks: readonly Track[]): void {
+    for (const track of tracks) this.#streams.set(track.id, track);
+    // ponytail: keep the newest 500; plenty for a browsing session.
+    for (const id of [...this.#streams.keys()].slice(0, Math.max(0, this.#streams.size - 500))) {
+      this.#streams.delete(id);
+    }
+  }
+
+  isSaved(id: string): boolean {
+    return this.tracks.some((track) => track.id === id);
+  }
+
+  /** Adds a streamed song to the library so it stays after Discover moves on. */
+  async save(track: Track): Promise<void> {
+    if (this.isSaved(track.id)) return;
+    const saved = { ...($state.snapshot(track) as Track), addedAt: Date.now() };
+    this.tracks = [...this.tracks, saved].sort(compareTracks);
+    await (await db()).put('tracks', saved);
+    toast.show(`Saved “${track.title}” to your library.`);
+  }
+
+  async remove(id: string): Promise<void> {
+    const track = this.byId.get(id);
+    this.tracks = this.tracks.filter((t) => t.id !== id);
+    await (await db()).delete('tracks', id);
+    if (track) toast.show(`Removed “${track.title}” from your library.`);
+  }
+
+  /** What the player loads: a file from this device, or a stream address. */
+  async sourceFor(track: Track): Promise<Blob | string | null> {
+    if (track.source === 'stream') return track.streamUrl ?? null;
+    return this.fileFor(track);
   }
 
   isAvailable(track: Track): boolean {
@@ -143,6 +184,12 @@ class Library {
   async fileFor(track: Track): Promise<File | null> {
     try {
       if (track.source === 'session') return this.#sessionFiles.get(track.id) ?? null;
+      if (track.source === 'stream') {
+        // Downloads the whole song; used only for analysing saved streams.
+        if (!track.streamUrl) return null;
+        const response = await fetch(track.streamUrl);
+        return response.ok ? new File([await response.blob()], track.title) : null;
+      }
       if (track.source === 'copy') return (await (await db()).get('files', track.id)) ?? null;
       if (!track.handle) return null;
       if ((await track.handle.queryPermission({ mode: 'read' })) !== 'granted') {

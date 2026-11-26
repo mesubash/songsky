@@ -78,7 +78,7 @@ export class AudioEngine {
   }
 
   /** Loads a song on the active deck, cutting off anything still fading out. */
-  load(file: Blob, startAt = 0): void {
+  load(file: Blob | string, startAt = 0): void {
     this.#finishFade();
     this.#stop(this.#idle);
     this.#setSource(this.#deck, file, startAt);
@@ -101,7 +101,7 @@ export class AudioEngine {
   }
 
   /** Starts `file` on the idle deck and fades between the two over `seconds`. */
-  async crossfadeTo(file: Blob, seconds: number): Promise<void> {
+  async crossfadeTo(file: Blob | string, seconds: number): Promise<void> {
     this.#finishFade();
     const outgoing = this.#deck;
     this.#active = 1 - this.#active;
@@ -153,6 +153,8 @@ export class AudioEngine {
   #createDeck(index: number): Deck {
     const audio = new Audio();
     audio.preload = 'auto';
+    // Streams come from other sites; without this, Web Audio would play them as silence.
+    audio.crossOrigin = 'anonymous';
     const deck: Deck = { audio, url: null, gain: null };
     const isActive = () => this.#active === index;
 
@@ -171,18 +173,22 @@ export class AudioEngine {
     return deck;
   }
 
-  #setSource(deck: Deck, file: Blob, startAt: number): void {
+  /** A Blob plays through a temporary object URL; a string is a stream address. */
+  #setSource(deck: Deck, file: Blob | string, startAt: number): void {
     if (deck.url) URL.revokeObjectURL(deck.url);
-    deck.url = URL.createObjectURL(file);
-    deck.audio.src = deck.url;
+    deck.url = typeof file === 'string' ? null : URL.createObjectURL(file);
+    deck.audio.src = deck.url ?? (file as string);
     if (startAt > 0) deck.audio.currentTime = startAt;
   }
 
   #stop(deck: Deck): void {
     deck.audio.pause();
-    if (deck.url) {
+    if (deck.audio.getAttribute('src')) {
+      // Also closes stream connections, not just object URLs.
       deck.audio.removeAttribute('src');
       deck.audio.load();
+    }
+    if (deck.url) {
       URL.revokeObjectURL(deck.url);
       deck.url = null;
     }
