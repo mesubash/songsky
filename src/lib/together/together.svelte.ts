@@ -1,5 +1,6 @@
 import { untrack } from 'svelte';
 import type { MessageAction, RequestAction, Room } from 'trystero';
+import { isAudiusStreamUrl } from '$lib/discover/audius';
 import { library } from '$lib/library/library.svelte';
 import { player } from '$lib/player/player.svelte';
 import {
@@ -39,6 +40,8 @@ interface Actions {
   catalog: MessageAction<SongInfo[]>;
   request: MessageAction<SongInfo>;
   requests: MessageAction<SongRequest[]>;
+  /** Streamed songs are shared as their Audius address; guests stream them directly. */
+  stream: MessageAction<SongInfo & { url: string }>;
 }
 
 /** A tiny silent clip, played from the Join tap so browsers allow playback later. */
@@ -211,6 +214,7 @@ class Together {
       catalog: room.makeAction<SongInfo[]>('catalog'),
       request: room.makeAction<SongInfo>('request'),
       requests: room.makeAction<SongRequest[]>('requests'),
+      stream: room.makeAction<SongInfo & { url: string }>('stream'),
     };
     this.#room = room;
     this.#actions = actions;
@@ -306,6 +310,19 @@ class Together {
       this.receiving = null;
       if (this.#last) this.#follow(this.#last);
     });
+    actions.stream.onMessage((data) => {
+      const info = readSongInfo(data);
+      const url = (data as { url?: unknown } | null)?.url;
+      // Only real Audius stream links: the host must not be able to point us anywhere else.
+      if (!info || typeof url !== 'string' || !isAudiusStreamUrl(url) || !this.#audio) return;
+      if (this.#url) URL.revokeObjectURL(this.#url);
+      this.#url = null;
+      this.#audio.src = url;
+      this.#loadedKey = info.key;
+      this.song = info;
+      this.receiving = null;
+      if (this.#last) this.#follow(this.#last);
+    });
     actions.now.onMessage((data, { peerId }) => {
       const state = readNowPlaying(data);
       if (!state) return;
@@ -357,6 +374,16 @@ class Together {
     const track = player.current;
     const actions = this.#actions;
     if (!track || !actions) return;
+    if (track.source === 'stream' && track.streamUrl) {
+      const song = {
+        key: track.id,
+        title: track.title,
+        artist: track.artist,
+        url: track.streamUrl,
+      };
+      await actions.stream.send(song, { target }).catch(() => {});
+      return;
+    }
     const file = await library.fileFor(track);
     if (!file) return;
     const metadata: SongInfo = { key: track.id, title: track.title, artist: track.artist };
