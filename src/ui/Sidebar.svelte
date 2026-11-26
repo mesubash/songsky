@@ -292,10 +292,20 @@ nav a[aria-current="page"] {
   line-height: 1.15;
 }
 
+/* Recently played takes the space that's left and scrolls inside it, so nothing
+   below it gets covered on short windows. */
 .recent {
-  display: grid;
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
   gap: var(--space-2);
+  min-height: 6rem;
+}
+
+.recent ul {
   min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: thin;
 }
 
 .recent h2 {
@@ -345,6 +355,7 @@ nav a[aria-current="page"] {
 }
 
 .keys-hint {
+  flex: none;
   margin-top: auto;
   padding-inline: var(--space-3);
   color: var(--text-muted);
