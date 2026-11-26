@@ -142,20 +142,22 @@ const upNext = $derived(
             <div class="info" in:slide={{ delay: 60, distance: 40 }}>
               <div class="title-row">
                 <h2 class="title" title={track.title}>{track.title}</h2>
+              </div>
+              <div class="byline">
+                <p class="artist">
+                  {#if track.artistLink}
+                    <a href={track.artistLink} target="_blank" rel="noopener noreferrer"
+                      >{track.artist}</a
+                    >
+                    <span class="source">on Audius</span>
+                  {:else}
+                    {track.artist}{track.album ? `, ${track.album}` : ''}
+                  {/if}
+                </p>
                 {#if track.source === 'stream'}
-                  <HeartButton {track} size={26} />
+                  <HeartButton {track} size={24} />
                 {/if}
               </div>
-              <p class="artist">
-                {#if track.artistLink}
-                  <a href={track.artistLink} target="_blank" rel="noopener noreferrer"
-                    >{track.artist}</a
-                  >
-                  <span class="source">on Audius</span>
-                {:else}
-                  {track.artist}{track.album ? `, ${track.album}` : ''}
-                {/if}
-              </p>
               <!-- Always present (even empty) so the controls below never move. -->
               <p class="facts">
                 {#if track.bpm}
@@ -314,15 +316,15 @@ header {
   height: 2lh;
   font-size: var(--text-xl);
   line-height: 1.2;
-  justify-content: space-between;
-  gap: var(--space-3);
 }
 
-/* Line the heart up with the first line of the title. */
-.title-row :global(.heart) {
-  align-self: flex-start;
-  margin-top: -6px;
-  margin-inline-end: calc(var(--space-3) * -1);
+/* Artist on the left, the save heart right after it, on one line. */
+.byline {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-width: 0;
+  margin-block: -6px;
 }
 
 /* Song changes must not move the controls: the title gets a fixed height (cut off
@@ -339,6 +341,7 @@ header {
 }
 
 .artist {
+  min-width: 0;
   overflow: hidden;
   color: var(--text-muted);
   text-overflow: ellipsis;
@@ -399,7 +402,8 @@ header {
     width: 100%;
     max-width: 1240px;
     margin: 0 auto;
-    padding-bottom: 14vh;
+    /* Keep everything above the horizon (the visualizer, 16vh tall). */
+    padding-bottom: calc(16vh + var(--space-4));
   }
 
   /* Undo the phone ordering: cover first, then title, playback and Up next. */
@@ -456,6 +460,7 @@ header {
     display: flex;
     align-items: baseline;
     justify-content: space-between;
+    gap: var(--space-4);
   }
 
   .see-queue {
@@ -485,7 +490,7 @@ header {
     list-style: none;
   }
 
-  .up-next button {
+  .up-next li button {
     display: flex;
     align-items: center;
     gap: var(--space-3);
@@ -497,7 +502,7 @@ header {
     text-align: start;
   }
 
-  .up-next button:hover {
+  .up-next li button:hover {
     background: var(--surface);
   }
 
@@ -534,6 +539,17 @@ header {
     margin: 0;
     opacity: 0.8;
     pointer-events: none;
+  }
+}
+
+/* Shorter wide windows: three songs in Up next, so the list stays clear of the horizon. */
+@media (min-width: 960px) and (max-height: 1000px) {
+  .up-next li:nth-child(n + 4) {
+    display: none;
+  }
+
+  .up-next ol {
+    min-height: calc(3 * 56px + 2 * var(--space-1));
   }
 }
 
