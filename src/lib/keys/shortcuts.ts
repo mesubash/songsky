@@ -30,7 +30,7 @@ export const SHORTCUTS: { keys: string[]; label: string }[] = [
   { keys: ['L'], label: 'Save or remove the playing song' },
   { keys: ['F'], label: 'Open or close the full-screen player' },
   { keys: ['Q'], label: 'Open or close the queue' },
-  { keys: ['/'], label: 'Search' },
+  { keys: ['/'], label: 'Search (your library on the Library page)' },
   { keys: ['?'], label: 'Show these shortcuts' },
 ];
 

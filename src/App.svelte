@@ -86,6 +86,11 @@ function onkeydown(event: KeyboardEvent) {
       return;
     case 'search':
       nowPlayingOpen = false;
+      // On the library page, search the library; anywhere else, search Discover.
+      if (view.current === 'library' && library.tracks.length) {
+        document.querySelector<HTMLInputElement>('#library-filter')?.focus();
+        return;
+      }
       location.hash = '#discover';
       // The top-bar search on desktop, the in-page one on phones: whichever is showing.
       requestAnimationFrame(() => {
