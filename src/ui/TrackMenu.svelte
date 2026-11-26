@@ -6,6 +6,7 @@ import { playlists } from '$lib/playlists/playlists.svelte';
 import { toast } from '$lib/toast.svelte';
 import { playlistHref } from '$lib/view.svelte';
 import Icon from './Icon.svelte';
+import { placeMenu } from './menu';
 
 /** The ⋯ menu on a song: Play next, Add to queue, Add to playlist (and Remove, where
     the list allows it). Uses the browser's popover, so clicking outside or pressing
@@ -22,14 +23,8 @@ let menu = $state<HTMLDivElement>();
 let page = $state<'main' | 'playlists'>('main');
 const menuId = $props.id();
 
-/** Opens below the button, or above it when there's no room below. */
 function place() {
-  if (!button || !menu) return;
-  const at = button.getBoundingClientRect();
-  const height = menu.offsetHeight;
-  const below = at.bottom + 4 + height < innerHeight;
-  menu.style.top = `${Math.max(8, below ? at.bottom + 4 : at.top - height - 4)}px`;
-  menu.style.left = `${Math.max(8, at.right - menu.offsetWidth)}px`;
+  if (button && menu) placeMenu(button, menu);
 }
 
 function ontoggle(event: ToggleEvent) {
@@ -38,15 +33,11 @@ function ontoggle(event: ToggleEvent) {
     return;
   }
   place();
-  menu?.querySelector('button')?.focus();
 }
 
 function showPlaylists() {
   page = 'playlists';
-  requestAnimationFrame(() => {
-    place();
-    menu?.querySelector('button')?.focus();
-  });
+  requestAnimationFrame(place);
 }
 
 function done(message: string) {

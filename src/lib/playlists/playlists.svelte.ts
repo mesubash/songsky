@@ -11,6 +11,8 @@ export function nextName(names: readonly string[]): string {
 /** Your playlists, newest first. Saved on this device. */
 class Playlists {
   list = $state<Playlist[]>([]);
+  /** A playlist whose page should open with its name ready to edit (from a ⋯ menu). */
+  renameRequest = $state<string | null>(null);
 
   async load(): Promise<void> {
     this.list = (await allPlaylists()).sort((a, b) => b.createdAt - a.createdAt);

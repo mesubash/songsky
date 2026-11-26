@@ -32,7 +32,8 @@ $effect(() => {
 });
 </script>
 
-<!-- Decorative: the title is always shown next to it. -->
+<!-- Decorative: the title is always shown next to it. A cover that fails to load falls
+     back to the music note instead of a broken image. -->
 <div class="cover" class:fluid style:--size="{size}px">
   {#if url}
     <img
@@ -43,6 +44,7 @@ $effect(() => {
       decoding="async"
       loading="lazy"
       referrerpolicy="no-referrer"
+      onerror={() => (url = null)}
     >
   {:else}
     <Icon name="music" size={Math.round(size * 0.4)} />

@@ -9,6 +9,7 @@ import { playlistHref, type View, view } from '$lib/view.svelte';
 import Cover from './Cover.svelte';
 import Icon, { type IconName } from './Icon.svelte';
 import Logo from './Logo.svelte';
+import PlaylistMenu from './PlaylistMenu.svelte';
 
 /** Desktop only: navigation, the sky, and what you played last. Phones use the tabs instead. */
 
@@ -90,7 +91,7 @@ function playRecent(id: string) {
     {#if playlists.list.length}
       <ul>
         {#each playlists.list as playlist (playlist.id)}
-          <li>
+          <li class="playlist-item">
             <a
               class="playlist-link"
               href={playlistHref(playlist.id)}
@@ -99,6 +100,7 @@ function playRecent(id: string) {
                 : undefined}
               >{playlist.name}</a
             >
+            <span class="item-menu"><PlaylistMenu {playlist} small /></span>
           </li>
         {/each}
       </ul>
@@ -359,7 +361,8 @@ nav a[aria-current="page"] {
 .playlist-link {
   display: block;
   overflow: hidden;
-  padding: var(--space-2) var(--space-3);
+  /* Room on the right for the ⋯ button. */
+  padding: var(--space-2) 36px var(--space-2) var(--space-3);
   border-radius: var(--radius-md);
   color: var(--text-muted);
   font-size: var(--text-sm);
@@ -377,5 +380,28 @@ nav a[aria-current="page"] {
 .playlist-link[aria-current="page"] {
   background: var(--surface-strong);
   color: var(--text);
+}
+.playlist-item {
+  position: relative;
+}
+
+/* The ⋯ button shows on hover or keyboard focus, so the list stays calm. */
+.item-menu {
+  position: absolute;
+  top: 50%;
+  right: var(--space-1);
+  opacity: 0;
+  transform: translateY(-50%);
+}
+
+.playlist-item:hover .item-menu,
+.playlist-item:focus-within .item-menu {
+  opacity: 1;
+}
+
+@media (hover: none) {
+  .item-menu {
+    opacity: 1;
+  }
 }
 </style>
