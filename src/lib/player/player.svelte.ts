@@ -92,6 +92,12 @@ class Player {
     await this.#load(true);
   }
 
+  /** Plays songs in a fixed order (a mix), so shuffle is turned off. */
+  async playInOrder(ids: string[]): Promise<void> {
+    this.shuffle = false;
+    await this.playList(ids, 0);
+  }
+
   async shuffleAll(ids: string[]): Promise<void> {
     this.shuffle = true;
     await this.playList(ids, Math.floor(Math.random() * ids.length));

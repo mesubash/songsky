@@ -1,4 +1,6 @@
 <script lang="ts">
+import { analyzer } from '$lib/analysis/analyzer.svelte';
+import { mixOrder } from '$lib/analysis/mix';
 import { formatLength } from '$lib/format';
 import { library } from '$lib/library/library.svelte';
 import { memory } from '$lib/memory/memory.svelte';
@@ -8,6 +10,13 @@ import TrackList from './TrackList.svelte';
 
 const ids = $derived(library.tracks.map((t) => t.id));
 const count = $derived(library.tracks.length);
+
+/** A mix starting from the playing song, or a random one. */
+function playMix() {
+  const tracks = library.tracks;
+  const start = player.current?.id ?? tracks[Math.floor(Math.random() * tracks.length)]?.id ?? '';
+  void player.playInOrder(mixOrder(tracks, start));
+}
 
 function clearLibrary() {
   if (confirm('Remove all songs from Attune? Your files on this device are not deleted.')) {
@@ -28,10 +37,21 @@ function clearLibrary() {
           ? `, ${formatLength(library.totalDuration)}`
           : ''}
       </p>
+      {#if analyzer.progress}
+        <p class="meta" aria-live="polite">
+          Reading tempo and key: {analyzer.progress.done} of {analyzer.progress.total}
+        </p>
+      {/if}
     </div>
     <div class="actions">
       <Button variant="primary" icon="play" onclick={() => player.playList(ids)}>Play</Button>
       <Button icon="shuffle" onclick={() => player.shuffleAll(ids)}>Shuffle</Button>
+      <Button
+        icon="disc"
+        title="Play songs in an order that flows: close tempo and matching keys"
+        onclick={playMix}
+        >Mix</Button
+      >
       <button class="clear" type="button" onclick={clearLibrary}>Clear library</button>
     </div>
   </div>

@@ -35,6 +35,14 @@ const ids = $derived(tracks.map((t) => t.id));
           <span class="artist">{track.artist}</span>
         </span>
         <span class="album">{track.album}</span>
+        <span class="tempo">
+          {#if track.bpm}
+            {track.bpm}
+          {/if}
+          {#if track.camelot}
+            <abbr class="key" title={track.key}>{track.camelot}</abbr>
+          {/if}
+        </span>
         <span class="duration">{track.duration ? formatTime(track.duration) : ''}</span>
       </button>
     </li>
@@ -55,7 +63,7 @@ li {
 
 .row {
   display: grid;
-  grid-template-columns: 2.5rem auto minmax(0, 2fr) minmax(0, 1.2fr) 4rem;
+  grid-template-columns: 2.5rem auto minmax(0, 2fr) minmax(0, 1.2fr) 6rem 4rem;
   align-items: center;
   gap: var(--space-4);
   width: 100%;
@@ -151,6 +159,36 @@ li {
 @keyframes bounce {
   from {
     transform: scaleY(0.25);
+  }
+}
+
+.tempo {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+.key {
+  min-width: 2.6em;
+  padding: 1px var(--space-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-full);
+  font-size: var(--text-xs);
+  text-align: center;
+  text-decoration: none;
+}
+
+@media (max-width: 900px) {
+  .row {
+    grid-template-columns: 2.5rem auto minmax(0, 2fr) minmax(0, 1.2fr) 4rem;
+  }
+
+  .tempo {
+    display: none;
   }
 }
 
