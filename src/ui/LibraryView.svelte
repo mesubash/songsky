@@ -13,7 +13,7 @@ import LibraryActions from './LibraryActions.svelte';
 import { placeMenu } from './menu';
 import TrackList from './TrackList.svelte';
 
-const count = $derived(library.tracks.length);
+const count = $derived(library.visibleTracks.length);
 
 const SORT_KEY = 'songsky:library-sort';
 let sortButton = $state<HTMLButtonElement>();
@@ -23,7 +23,7 @@ let order = $state<SortOrder>(
   (Object.keys(SORT_LABELS) as SortOrder[]).find((o) => o === localStorage.getItem(SORT_KEY)) ??
     'artist',
 );
-const shown = $derived(browse(library.tracks, query, order));
+const shown = $derived(browse(library.visibleTracks, query, order));
 
 async function newPlaylist() {
   const playlist = await playlists.create();

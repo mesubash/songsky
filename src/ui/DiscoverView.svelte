@@ -26,7 +26,7 @@ const TABS: { id: DiscoverTab; label: string; icon: IconName; on: () => boolean 
   { id: 'for-you', label: 'For you', icon: 'sun', on: () => discover.hasSongs },
   { id: 'genres', label: 'Genres', icon: 'disc', on: () => discover.hasSongs },
   { id: 'playlists', label: 'Playlists', icon: 'music', on: () => discover.useAudius },
-  { id: 'radio', label: 'Radio', icon: 'volume', on: () => prefs.sources.radio },
+  { id: 'radio', label: 'Radio', icon: 'volume', on: () => discover.useRadio },
 ];
 
 /** Tabs with a source turned on (Settings > Music sources). */

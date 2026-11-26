@@ -1,4 +1,5 @@
 import { SvelteMap } from 'svelte/reactivity';
+import { prefs } from '$lib/prefs.svelte';
 import { toast } from '$lib/toast.svelte';
 import { db } from './db';
 import { canPickFolder, isAbortError, isAudioFile, pickFiles, walkDirectory } from './files';
@@ -21,6 +22,11 @@ function compareTracks(a: Track, b: Track): number {
 
 class Library {
   tracks = $state<Track[]>([]);
+  /** The songs shown and played, following Settings > What Songsky plays: saved online
+      songs only when online music is on, your files only when your music is on. */
+  visibleTracks = $derived(
+    this.tracks.filter((t) => (t.source === 'stream' ? prefs.onlineMusic : prefs.localMusic)),
+  );
   progress = $state<ImportProgress | null>(null);
   readonly canPickFolder = canPickFolder;
 
@@ -36,6 +42,8 @@ class Library {
   /** Files that only live in memory this session (source: 'session'). */
   #sessionFiles = new SvelteMap<string, File>();
   #folders: FileSystemDirectoryHandle[] = [];
+  /** Names of the folders Songsky reads (folder access, Chromium browsers). */
+  folders = $state<string[]>([]);
   #coverIds = new Set<string>();
   #coverUrls = new Map<string, Promise<string | null>>();
 
@@ -47,6 +55,7 @@ class Library {
       database.getAllKeys('covers'),
     ]);
     this.#folders = folders;
+    this.folders = folders.map((f) => f.name);
     this.#coverIds = new Set(coverIds);
     // Session-only tracks lost their audio on reload; drop them.
     this.tracks = tracks.filter((track) => track.source !== 'session').sort(compareTracks);
@@ -108,8 +117,66 @@ class Library {
     }
 
     await (await db()).put('folders', dir, dir.name);
-    this.#folders.push(dir);
+    if (!this.folders.includes(dir.name)) {
+      this.#folders.push(dir);
+      this.folders = [...this.folders, dir.name];
+    }
     await this.#import(handles.map((handle) => ({ handle })));
+  }
+
+  /** Songs that live inside a folder (looked up through the browser's file handles). */
+  async #tracksIn(dir: FileSystemDirectoryHandle): Promise<Track[]> {
+    const inside: Track[] = [];
+    for (const track of this.tracks) {
+      if (track.handle && (await dir.resolve(track.handle)) !== null) inside.push(track);
+    }
+    return inside;
+  }
+
+  /** Reads a folder again: adds new songs and drops songs whose files are gone. */
+  async rescanFolder(name: string): Promise<void> {
+    const dir = this.#folders.find((f) => f.name === name);
+    if (!dir) return;
+    if ((await dir.queryPermission({ mode: 'read' })) !== 'granted') {
+      if ((await dir.requestPermission({ mode: 'read' })) !== 'granted') return;
+    }
+    const gone: string[] = [];
+    for (const track of await this.#tracksIn(dir)) {
+      try {
+        await track.handle?.getFile();
+      } catch {
+        gone.push(track.id);
+      }
+    }
+    await this.#removeTracks(gone);
+    const handles: FileSystemFileHandle[] = [];
+    for await (const handle of walkDirectory(dir)) handles.push(handle);
+    // Songs already in the library are skipped by the import.
+    await this.#import(handles.map((handle) => ({ handle })));
+    if (gone.length) {
+      toast.show(
+        `${gone.length} ${gone.length === 1 ? 'song was' : 'songs were'} no longer in ${name}, so they were removed.`,
+      );
+    }
+  }
+
+  /** Stops reading a folder and takes its songs out of Songsky. The files are untouched. */
+  async removeFolder(name: string): Promise<void> {
+    const dir = this.#folders.find((f) => f.name === name);
+    if (!dir) return;
+    await this.#removeTracks((await this.#tracksIn(dir)).map((t) => t.id));
+    await (await db()).delete('folders', name);
+    this.#folders = this.#folders.filter((f) => f !== dir);
+    this.folders = this.folders.filter((f) => f !== name);
+  }
+
+  async #removeTracks(ids: string[]): Promise<void> {
+    if (!ids.length) return;
+    const remove = new Set(ids);
+    this.tracks = this.tracks.filter((t) => !remove.has(t.id));
+    const tx = (await db()).transaction('tracks', 'readwrite');
+    for (const id of ids) void tx.store.delete(id);
+    await tx.done;
   }
 
   async addFiles(files?: File[]): Promise<void> {
@@ -242,6 +309,7 @@ class Library {
     this.#coverIds.clear();
     this.#sessionFiles.clear();
     this.#folders = [];
+    this.folders = [];
     this.tracks = [];
     toast.clear();
   }

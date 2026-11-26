@@ -5,6 +5,7 @@ import { formatLength } from '$lib/format';
 import { library } from '$lib/library/library.svelte';
 import { memory } from '$lib/memory/memory.svelte';
 import { player } from '$lib/player/player.svelte';
+import { prefs } from '$lib/prefs.svelte';
 import { together } from '$lib/together/together.svelte';
 import { view } from '$lib/view.svelte';
 import Button from './Button.svelte';
@@ -35,7 +36,7 @@ const page = $derived.by((): { title: string; subtitle: string } | null => {
   }
   // A playlist page has its own large heading, so the top bar stays clear.
   if (view.current === 'playlist') return null;
-  const count = library.tracks.length;
+  const count = library.visibleTracks.length;
   if (!count) return null;
   const length = library.totalDuration ? `, ${formatLength(library.totalDuration)}` : '';
   const reading = analyzer.progress
@@ -81,10 +82,10 @@ $effect(() => {
       <Icon name="settings" size={20} />
     </a>
     <SkyControl />
-    {#if library.tracks.length > 0 || player.current || together.invite}
+    {#if library.visibleTracks.length > 0 || player.current || together.invite}
       <TogetherButton />
     {/if}
-    {#if library.tracks.length > 0}
+    {#if library.visibleTracks.length > 0 && prefs.localMusic}
       {#if library.canPickFolder}
         <Button icon="folder" aria-label="Add folder" onclick={() => library.addFolder()}>
           <span class="wide-only">Add folder</span>

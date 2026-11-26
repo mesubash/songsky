@@ -6,6 +6,7 @@ import { library } from '$lib/library/library.svelte';
 import { memory } from '$lib/memory/memory.svelte';
 import { player } from '$lib/player/player.svelte';
 import { playlists } from '$lib/playlists/playlists.svelte';
+import { prefs } from '$lib/prefs.svelte';
 import { radio } from '$lib/radio/radio.svelte';
 import { toast } from '$lib/toast.svelte';
 import { view } from '$lib/view.svelte';
@@ -95,7 +96,7 @@ function onkeydown(event: KeyboardEvent) {
     case 'search':
       nowPlayingOpen = false;
       // On the library page, search the library; anywhere else, search Discover.
-      if (view.current === 'library' && library.tracks.length) {
+      if (view.current === 'library' && library.visibleTracks.length) {
         document.querySelector<HTMLInputElement>('#library-filter')?.focus();
         return;
       }
@@ -118,8 +119,10 @@ const hasFiles = (event: DragEvent) => event.dataTransfer?.types.includes('Files
 
 function ondrop(event: DragEvent) {
   if (!hasFiles(event)) return;
+  // Always caught, so the browser doesn't open the file; only added if your music is on.
   event.preventDefault();
   dragging = false;
+  if (!prefs.localMusic) return;
   const files = [...(event.dataTransfer?.files ?? [])].filter((f) => isAudioFile(f.name));
   if (files.length) void library.addFiles(files);
 }
@@ -137,7 +140,7 @@ $effect(() => {
   ondragover={(e) => {
     if (!hasFiles(e)) return;
     e.preventDefault();
-    dragging = true;
+    dragging = prefs.localMusic;
   }}
   ondragleave={(e) => {
     if (!e.relatedTarget) dragging = false;
@@ -154,7 +157,7 @@ $effect(() => {
     <main>
       {#if ready}
         <ViewTabs />
-        {#if view.current === 'discover'}
+        {#if view.current === 'discover' && prefs.onlineMusic}
           <DiscoverView />
         {:else if view.current === 'memories'}
           <MemoriesView />
@@ -162,7 +165,7 @@ $effect(() => {
           <PlaylistView />
         {:else if view.current === 'settings'}
           <SettingsView />
-        {:else if library.tracks.length > 0}
+        {:else if library.visibleTracks.length > 0}
           <LibraryView />
         {:else}
           <EmptyState />

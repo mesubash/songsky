@@ -6,11 +6,11 @@ import Button from './Button.svelte';
 import PaceButton from './PaceButton.svelte';
 
 /** Play, Shuffle, Mix and Pace for the library: above the song list. */
-const ids = $derived(library.tracks.map((t) => t.id));
+const ids = $derived(library.visibleTracks.map((t) => t.id));
 
 /** A mix starting from the playing song, or a random one. */
 function playMix() {
-  const tracks = library.tracks;
+  const tracks = library.visibleTracks;
   const start = player.current?.id ?? tracks[Math.floor(Math.random() * tracks.length)]?.id ?? '';
   void player.playInOrder(mixOrder(tracks, start));
 }

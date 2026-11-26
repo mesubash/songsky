@@ -38,9 +38,16 @@ function playFrom(index: number) {
     <p class="now">{skyNow}</p>
     <h2 id="empty-title" class="headline">Music that follows your sky.</h2>
     <p class="lead">
-      Free songs from independent artists, picked to feel
-      {discover.mood.moods.join(', ').toLowerCase()}. Or bring your own music: it stays on this
-      device.
+      {#if !prefs.onlineMusic}
+        Bring your own music: Songsky plays the songs on this device, and they stay here.
+      {:else if !prefs.localMusic}
+        Free songs from independent artists, picked to feel
+        {discover.mood.moods.join(', ').toLowerCase()}.
+      {:else}
+        Free songs from independent artists, picked to feel
+        {discover.mood.moods.join(', ').toLowerCase()}. Or bring your own music: it stays on this
+        device.
+      {/if}
     </p>
     <div class="actions">
       {#if discover.hasSongs}
@@ -48,14 +55,18 @@ function playFrom(index: number) {
           Play songs for your sky
         </Button>
       {/if}
-      {#if library.canPickFolder}
-        <Button icon="folder" onclick={() => library.addFolder()}>Choose a folder</Button>
+      {#if prefs.localMusic}
+        {#if library.canPickFolder}
+          <Button icon="folder" onclick={() => library.addFolder()}>Choose a folder</Button>
+        {/if}
+        <Button icon="plus" onclick={() => library.addFiles()}>
+          {library.canPickFolder ? 'Choose files' : 'Choose your songs'}
+        </Button>
       {/if}
-      <Button icon="plus" onclick={() => library.addFiles()}>
-        {library.canPickFolder ? 'Choose files' : 'Choose your songs'}
-      </Button>
     </div>
-    <p class="hint">You can also drop audio files anywhere on this page.</p>
+    {#if prefs.localMusic}
+      <p class="hint">You can also drop audio files anywhere on this page.</p>
+    {/if}
   </div>
 
   {#if discover.hasSongs}

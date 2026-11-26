@@ -4,6 +4,7 @@ import { library } from '$lib/library/library.svelte';
 import { memory } from '$lib/memory/memory.svelte';
 import { player } from '$lib/player/player.svelte';
 import { playlists } from '$lib/playlists/playlists.svelte';
+import { prefs } from '$lib/prefs.svelte';
 import { sky } from '$lib/sky/sky.svelte';
 import { playlistHref, type View, view } from '$lib/view.svelte';
 import Cover from './Cover.svelte';
@@ -46,7 +47,7 @@ async function newPlaylist() {
 }
 
 function playRecent(id: string) {
-  const ids = library.tracks.map((t) => t.id);
+  const ids = library.visibleTracks.map((t) => t.id);
   const index = ids.indexOf(id);
   void (index >= 0 ? player.playList(ids, index) : player.playList([id]));
 }
@@ -61,13 +62,15 @@ function playRecent(id: string) {
 
   <nav aria-label="Views">
     <ul>
-      {#each NAV as item (item.view)}
+      {#each NAV.filter(
+        (item) => item.view !== 'discover' || prefs.onlineMusic,
+      ) as item (item.view)}
         <li>
           <a href={item.href} aria-current={view.current === item.view ? 'page' : undefined}>
             <Icon name={item.icon} size={20} />
             <span class="label">{item.label}</span>
-            {#if item.view === 'library' && library.tracks.length}
-              <span class="count">{library.tracks.length}</span>
+            {#if item.view === 'library' && library.visibleTracks.length}
+              <span class="count">{library.visibleTracks.length}</span>
             {/if}
           </a>
         </li>
@@ -109,10 +112,12 @@ function playRecent(id: string) {
     {/if}
   </section>
 
-  <a class="sky-card" href="#discover">
+  <a class="sky-card" href={prefs.onlineMusic ? '#discover' : '#settings/sky'}>
     <span class="sky-line">{skyLine}</span>
     <span class="sky-title">{discover.mood.title}</span>
-    <span class="sky-hint">Songs picked for your sky</span>
+    <span class="sky-hint"
+      >{prefs.onlineMusic ? 'Songs picked for your sky' : 'Your sky settings'}</span
+    >
   </a>
 
   {#if recent.length}

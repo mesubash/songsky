@@ -34,11 +34,15 @@ class Discover {
 
   /** Jamendo is set up on the server and turned on in Settings. */
   get useJamendo(): boolean {
-    return this.jamendoReady && prefs.sources.jamendo;
+    return prefs.onlineMusic && this.jamendoReady && prefs.sources.jamendo;
   }
 
   get useAudius(): boolean {
-    return prefs.sources.audius;
+    return prefs.onlineMusic && prefs.sources.audius;
+  }
+
+  get useRadio(): boolean {
+    return prefs.onlineMusic && prefs.sources.radio;
   }
 
   /** Any source that can fill Discover's song lists is on. */

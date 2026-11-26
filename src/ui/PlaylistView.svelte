@@ -75,7 +75,10 @@ let searchingOnline = $state(false);
 
 const inPlaylist = $derived(new Set(playlist?.trackIds ?? []));
 const fromLibrary = $derived(
-  (query.trim() ? browse(library.tracks, query, 'artist') : browse(library.tracks, '', 'added'))
+  (query.trim()
+    ? browse(library.visibleTracks, query, 'artist')
+    : browse(library.visibleTracks, '', 'added')
+  )
     .filter((t) => !inPlaylist.has(t.id))
     .slice(0, 8),
 );

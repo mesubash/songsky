@@ -20,7 +20,7 @@ const days = $derived(
   ),
 );
 const placeCount = $derived(memory.places.length);
-const ids = $derived(library.tracks.map((t) => t.id));
+const ids = $derived(library.visibleTracks.map((t) => t.id));
 
 /** Which friendly card to show above the map, if any. */
 const tip = $derived(!memory.rememberPlaces ? 'off' : !sky.place ? 'no-place' : null);

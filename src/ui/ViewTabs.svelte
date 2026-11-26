@@ -1,4 +1,5 @@
 <script lang="ts">
+import { prefs } from '$lib/prefs.svelte';
 import { view } from '$lib/view.svelte';
 </script>
 
@@ -8,7 +9,9 @@ import { view } from '$lib/view.svelte';
     aria-current={view.current === 'library' || view.current === 'playlist' ? 'page' : undefined}
     >Library</a
   >
-  <a href="#discover" aria-current={view.current === 'discover' ? 'page' : undefined}>Discover</a>
+  {#if prefs.onlineMusic}
+    <a href="#discover" aria-current={view.current === 'discover' ? 'page' : undefined}>Discover</a>
+  {/if}
   <a href="#memories" aria-current={view.current === 'memories' ? 'page' : undefined}>Memories</a>
 </nav>
 

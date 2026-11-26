@@ -8,7 +8,7 @@ import { library } from '$lib/library/library.svelte';
 import { memory } from '$lib/memory/memory.svelte';
 import { player } from '$lib/player/player.svelte';
 import { playlists } from '$lib/playlists/playlists.svelte';
-import { prefs } from '$lib/prefs.svelte';
+import { type PlayMode, prefs } from '$lib/prefs.svelte';
 import { pwa } from '$lib/pwa.svelte';
 import { sky } from '$lib/sky/sky.svelte';
 import { toast } from '$lib/toast.svelte';
@@ -39,6 +39,13 @@ const SECTIONS: { id: string; label: string; icon: IconName; tint: string; hint:
     icon: 'sliders',
     tint: '#ef4444',
     hint: 'Crossfade and equalizer',
+  },
+  {
+    id: 'music',
+    label: 'Your music',
+    icon: 'music',
+    tint: '#7c3aed',
+    hint: 'What plays, and music folders',
   },
   {
     id: 'sources',
@@ -100,6 +107,43 @@ $effect(() => {
     hasJamendo = ok;
   });
 });
+
+const MODES: { id: PlayMode; label: string }[] = [
+  { id: 'both', label: 'Both' },
+  { id: 'local', label: 'Only my music' },
+  { id: 'online', label: 'Only online music' },
+];
+
+const MODE_HINTS: Record<PlayMode, string> = {
+  both: 'Your own songs and free music online: Discover, radio and the sky picks.',
+  local:
+    'Only the songs on this device. Discover, radio and online songs are hidden, so no music is fetched online.',
+  online:
+    'Only free music online. Adding your own songs is turned off, and your files are hidden from the library.',
+};
+
+let busyFolder = $state<string | null>(null);
+
+async function rescan(folder: string) {
+  busyFolder = folder;
+  try {
+    await library.rescanFolder(folder);
+  } finally {
+    busyFolder = null;
+  }
+}
+
+async function removeFolder(folder: string) {
+  const ok = await ask({
+    title: `Remove “${folder}”?`,
+    message:
+      'Songsky stops reading this folder and removes its songs from your library. The files on your device are not touched.',
+    action: 'Remove folder',
+  });
+  if (!ok) return;
+  await library.removeFolder(folder);
+  toast.show(`Removed ${folder}.`);
+}
 
 const presets = Object.entries(EQ_PRESETS) as [EqPresetId, (typeof EQ_PRESETS)[EqPresetId]][];
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
@@ -399,7 +443,77 @@ const CREDITS: { name: string; what: string; url: string }[] = [
             screen locks.
           </p>
         {/if}
+      {:else if current.id === 'music'}
+        <div class="rows">
+          <div class="row stack">
+            <div class="text">
+              <p class="name">What Songsky plays</p>
+              <p class="desc">{MODE_HINTS[prefs.mode]}</p>
+            </div>
+            <fieldset class="segmented">
+              <legend class="visually-hidden">What Songsky plays</legend>
+              {#each MODES as option (option.id)}
+                <button
+                  type="button"
+                  aria-pressed={prefs.mode === option.id}
+                  onclick={() => prefs.setMode(option.id)}
+                >
+                  {option.label}
+                </button>
+              {/each}
+            </fieldset>
+          </div>
+        </div>
+
+        {#if prefs.localMusic}
+          <div class="section-row">
+            <h4>Music folders</h4>
+            {#if library.canPickFolder}
+              <Button icon="folder" onclick={() => library.addFolder()}>Add a folder</Button>
+            {/if}
+          </div>
+          {#if !library.canPickFolder}
+            <p class="note">
+              This browser can’t keep a folder connected, so songs you add are copied into Songsky’s
+              storage instead. Chrome and Edge can read a music folder directly.
+            </p>
+          {:else if library.folders.length}
+            <ul class="rows">
+              {#each library.folders as folder (folder)}
+                <li class="row">
+                  <div class="text">
+                    <p class="name">{folder}</p>
+                    <p class="desc">Songsky reads songs from this folder on your device.</p>
+                  </div>
+                  <div class="control">
+                    <Button
+                      variant="quiet"
+                      disabled={busyFolder === folder}
+                      onclick={() => rescan(folder)}
+                      >{busyFolder === folder ? 'Rescanning…' : 'Rescan'}</Button
+                    >
+                    <Button variant="quiet" onclick={() => removeFolder(folder)}>Remove</Button>
+                  </div>
+                </li>
+              {/each}
+            </ul>
+          {:else}
+            <div class="empty">
+              <p class="name">No music folders yet</p>
+              <p class="desc">
+                Add a folder and Songsky reads the songs in it, and notices new ones when you
+                rescan.
+              </p>
+            </div>
+          {/if}
+        {/if}
       {:else if current.id === 'sources'}
+        {#if !prefs.onlineMusic}
+          <p class="note">
+            Online music is off. Choose “Both” or “Online music” in
+            <a class="inline-link" href="#settings/music">Your music</a> to use these sources.
+          </p>
+        {/if}
         <p class="note">
           Turn off a source to hide it from Discover. Songs you saved from it stay in your library.
         </p>
@@ -992,6 +1106,22 @@ output {
   color: var(--text);
   font: inherit;
   font-weight: 600;
+}
+
+.section-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding-top: var(--space-4);
+}
+
+.section-row h4 {
+  padding-top: 0;
+}
+
+.inline-link {
+  color: var(--text);
 }
 
 .empty {
