@@ -1,9 +1,9 @@
 import { AudioEngine } from '$lib/audio/engine';
 import { fadeLength } from '$lib/audio/eq';
 import { sound } from '$lib/audio/sound.svelte';
-import { addPlay } from '$lib/library/db';
 import { library } from '$lib/library/library.svelte';
 import type { Track } from '$lib/library/types';
+import { memory } from '$lib/memory/memory.svelte';
 import { isIOS } from '$lib/platform';
 import { nextIndex, prevIndex, REPEAT_ORDER, type RepeatMode, shuffledWithFirst } from './queue';
 
@@ -263,7 +263,7 @@ class Player {
           file,
           fadeLength(sound.crossfade, fadeWithin, track.duration),
         );
-        void addPlay(track.id);
+        void memory.record(track.id);
       } catch {
         this.error = 'Playback was blocked. Press play to start.';
       }
@@ -314,7 +314,7 @@ class Player {
   async #play(): Promise<void> {
     try {
       await this.#engine.play();
-      if (this.#loadedId && this.position < 1) void addPlay(this.#loadedId);
+      if (this.#loadedId && this.position < 1) void memory.record(this.#loadedId);
     } catch (error) {
       if (!(error instanceof DOMException && error.name === 'AbortError')) {
         this.error = 'Playback was blocked. Press play to start.';

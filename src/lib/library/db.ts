@@ -27,6 +27,10 @@ export function db(): Promise<IDBPDatabase<AttuneDB>> {
   return connection;
 }
 
-export async function addPlay(trackId: string): Promise<void> {
-  await (await db()).add('history', { trackId, playedAt: Date.now() });
+export async function addPlay(record: PlayRecord): Promise<void> {
+  await (await db()).add('history', record);
+}
+
+export async function allPlays(): Promise<PlayRecord[]> {
+  return (await db()).getAll('history');
 }

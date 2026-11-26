@@ -23,4 +23,7 @@ export interface Track {
 export interface PlayRecord {
   trackId: string;
   playedAt: number;
+  /** Only when "Remember where I listen" is on. Rounded to about 11 km. */
+  place?: { name: string; latitude: number; longitude: number };
+  weather?: string;
 }

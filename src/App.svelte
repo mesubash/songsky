@@ -2,6 +2,7 @@
 import { onMount } from 'svelte';
 import { isAudioFile } from '$lib/library/files';
 import { library } from '$lib/library/library.svelte';
+import { memory } from '$lib/memory/memory.svelte';
 import { player } from '$lib/player/player.svelte';
 import EmptyState from './ui/EmptyState.svelte';
 import Header from './ui/Header.svelte';
@@ -19,7 +20,7 @@ let soundOpen = $state(false);
 let dragging = $state(false);
 
 onMount(async () => {
-  await library.load();
+  await Promise.all([library.load(), memory.load()]);
   player.restore();
   ready = true;
 });

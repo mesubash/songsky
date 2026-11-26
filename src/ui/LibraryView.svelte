@@ -1,6 +1,7 @@
 <script lang="ts">
 import { formatLength } from '$lib/format';
 import { library } from '$lib/library/library.svelte';
+import { memory } from '$lib/memory/memory.svelte';
 import { player } from '$lib/player/player.svelte';
 import Button from './Button.svelte';
 import TrackList from './TrackList.svelte';
@@ -12,6 +13,7 @@ function clearLibrary() {
   if (confirm('Remove all songs from Attune? Your files on this device are not deleted.')) {
     player.pause();
     void library.clear();
+    memory.forget();
   }
 }
 </script>
