@@ -122,12 +122,17 @@ function ondrop(event: DragEvent) {
     padding: 0;
   }
 
+  /* The column is full width so the sticky header can span it; the page itself is
+     centered inside at the shared content width. */
   .content {
-    width: 100%;
+    min-width: 0;
+    padding-bottom: var(--space-12);
+  }
+
+  main {
     max-width: calc(var(--content-max) + 2 * var(--gutter));
     margin-inline: auto;
     padding-inline: var(--gutter);
-    padding-bottom: var(--space-12);
   }
 
   .has-player .content {

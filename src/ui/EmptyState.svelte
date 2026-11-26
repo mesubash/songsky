@@ -109,7 +109,7 @@ function playFrom(index: number) {
 .home {
   display: grid;
   gap: var(--space-12);
-  padding-block: clamp(var(--space-8), 9vh, 7rem) var(--space-8);
+  padding-block: clamp(var(--space-6), 5vh, var(--space-12)) var(--space-8);
 }
 
 .intro {

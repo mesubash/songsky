@@ -32,13 +32,23 @@ import TogetherButton from './TogetherButton.svelte';
 </header>
 
 <style>
+/* Stays at the top while the page scrolls, so the sky and Together buttons are always
+   reachable. The band bleeds to the edges; its contents line up with the page. */
 .header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-4);
-  padding-block: var(--space-6) var(--space-4);
-  padding-top: max(var(--space-6), env(safe-area-inset-top));
+  margin-inline: calc(var(--gutter) * -1);
+  padding-block: var(--space-3);
+  padding-top: max(var(--space-3), env(safe-area-inset-top));
+  padding-inline: var(--gutter);
+  background: color-mix(in srgb, var(--sky-top) 72%, transparent);
+  backdrop-filter: blur(18px) saturate(1.3);
+  -webkit-backdrop-filter: blur(18px) saturate(1.3);
 }
 
 .wordmark {
@@ -69,6 +79,8 @@ import TogetherButton from './TogetherButton.svelte';
 @media (min-width: 1100px) {
   .header {
     justify-content: flex-end;
+    margin-inline: 0;
+    padding-inline: max(var(--gutter), calc((100% - var(--content-max)) / 2));
   }
 
   .wordmark {
