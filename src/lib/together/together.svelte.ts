@@ -269,6 +269,9 @@ class Together {
             this.requests = this.requests.filter((r) => r.key !== id);
             this.#shareRequests();
           }
+          // Starting a new list replaces the queue, so keep the top request next.
+          const top = this.requests[0];
+          if (top) player.playNextUp(top.key);
         });
       });
     });
