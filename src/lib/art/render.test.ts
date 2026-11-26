@@ -31,7 +31,8 @@ describe('captionFor', () => {
   const date = new Date(2026, 10, 26);
 
   it('mentions the weather and time of day', () => {
-    expect(captionFor('Light rain', 'night', date)).toBe('Light rain at night, 26 Nov 2026');
+    expect(captionFor('rain', 'night', date)).toBe('In the rain at night, 26 Nov 2026');
+    expect(captionFor('clear', 'day', date)).toBe('Clear skies by day, 26 Nov 2026');
   });
 
   it('works without weather', () => {

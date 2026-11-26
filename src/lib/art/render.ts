@@ -1,5 +1,6 @@
 import { traceHorizon } from '$lib/audio/spectrum';
 import type { Sky } from '$lib/sky/time';
+import type { Condition } from '$lib/sky/weather';
 
 export const ART_WIDTH = 1080;
 export const ART_HEIGHT = 1350;
@@ -25,15 +26,25 @@ export interface ArtInput {
 
 const TIME_PHRASES: Record<Sky, string> = {
   dawn: 'at dawn',
-  day: 'in the day',
+  day: 'by day',
   dusk: 'at dusk',
   night: 'at night',
 };
 
-/** "Light rain at night, 26 Nov 2026" or "Heard at dusk, 26 Nov 2026". */
-export function captionFor(weather: string | null, time: Sky, date: Date): string {
+const WEATHER_PHRASES: Record<Condition, string> = {
+  clear: 'Clear skies',
+  cloudy: 'Under clouds',
+  fog: 'In the fog',
+  rain: 'In the rain',
+  snow: 'In the snow',
+  storm: 'In a storm',
+};
+
+/** "In the rain at night, 26 Nov 2026" or "Heard at dusk, 26 Nov 2026". */
+export function captionFor(weather: Condition | null, time: Sky, date: Date): string {
   const day = date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
-  return `${weather ?? 'Heard'} ${TIME_PHRASES[time]}, ${day}`;
+  const lead = weather ? WEATHER_PHRASES[weather] : 'Heard';
+  return `${lead} ${TIME_PHRASES[time]}, ${day}`;
 }
 
 /** Greedy word wrap, ending with "…" if the text needs more than `maxLines`. */
@@ -97,10 +108,13 @@ export async function renderSongArt(input: ArtInput): Promise<Blob> {
   const glow = context.createRadialGradient(W / 2, horizonY, 0, W / 2, horizonY, W * 0.75);
   glow.addColorStop(0, palette.glow);
   glow.addColorStop(1, 'transparent');
+  // "screen" lightens the sky with the glow instead of greying it, by day and by night.
+  context.globalCompositeOperation = 'screen';
   context.globalAlpha = 0.85;
   context.fillStyle = glow;
   context.fillRect(0, 0, W, horizonY);
   context.globalAlpha = 1;
+  context.globalCompositeOperation = 'source-over';
   context.filter = 'none';
 
   // The song's horizon: hills shaped by its sound, dark against the glow.
@@ -137,7 +151,7 @@ export async function renderSongArt(input: ArtInput): Promise<Blob> {
   context.fillStyle = '#f4f5fb';
   context.font = `700 76px ${input.displayFont}`;
   const titleLines = wrapLines((t) => context.measureText(t).width, input.title, maxWidth, 2);
-  let y = horizonY + 250;
+  let y = horizonY + 215;
   for (const line of titleLines) {
     context.fillText(line, left, y);
     y += 86;

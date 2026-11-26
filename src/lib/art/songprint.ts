@@ -48,7 +48,8 @@ export function seededLevels(seed: string, bands = BANDS): number[] {
     const tilt = 1 - (i / bands) * 0.7; // Real music has more energy in the bass.
     return tilt * (0.45 + random() * 0.55);
   });
-  // Smooth neighbours so it reads as hills, not noise.
-  const smooth = raw.map((v, i) => ((raw[i - 1] ?? v) + v * 2 + (raw[i + 1] ?? v)) / 4);
-  return normalize(smooth);
+  // Smooth twice so it reads as rolling hills, not jagged noise.
+  const smooth = (values: number[]) =>
+    values.map((v, i) => ((values[i - 1] ?? v) + v * 2 + (values[i + 1] ?? v)) / 4);
+  return normalize(smooth(smooth(raw)));
 }
