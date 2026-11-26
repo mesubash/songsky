@@ -43,6 +43,8 @@ interface SavedSky {
   place: Place | null;
   weather: Weather | null;
   fetchedAt: number;
+  /** Location was asked for once already, so it is never asked again by itself. */
+  askedForLocation?: boolean;
 }
 
 class SkyState {
@@ -55,11 +57,20 @@ class SkyState {
   error = $state<string | null>(null);
 
   #fetchedAt = 0;
+  #askedForLocation = false;
 
   start(): void {
     this.#restore();
     this.#apply();
-    void this.refresh();
+    if (this.source === 'time' && !this.#askedForLocation) {
+      // First visit: ask once, so the sky follows the real weather by default.
+      // If the answer is no, the sky stays on time of day and city search remains.
+      this.#askedForLocation = true;
+      this.#save();
+      void this.useLocation();
+    } else {
+      void this.refresh();
+    }
     setInterval(() => {
       this.time = skyForHour(new Date().getHours());
       this.#apply();
@@ -147,6 +158,7 @@ class SkyState {
       this.place = saved.place;
       this.weather = saved.weather;
       this.#fetchedAt = saved.fetchedAt;
+      this.#askedForLocation = saved.askedForLocation ?? saved.source !== 'time';
     } catch {
       // Ignore corrupt settings.
     }
@@ -158,6 +170,7 @@ class SkyState {
       place: $state.snapshot(this.place),
       weather: $state.snapshot(this.weather),
       fetchedAt: this.#fetchedAt,
+      askedForLocation: this.#askedForLocation,
     };
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(saved));
