@@ -35,9 +35,8 @@ test-results/
 *.ogg
 *.opus
 
-# Capacitor (if mobile wrap is added later)
-android/
-ios/
+# Capacitor: the android/ and ios/ projects are committed; their own .gitignore files
+# leave out build output and the copied web app.
 
 # Private planning notes (not published)
 .plan/
