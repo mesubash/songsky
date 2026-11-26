@@ -1,4 +1,6 @@
 <script lang="ts">
+import { cubicOut } from 'svelte/easing';
+import { fly } from 'svelte/transition';
 import { formatTime } from '$lib/format';
 import { library } from '$lib/library/library.svelte';
 import { player } from '$lib/player/player.svelte';
@@ -15,6 +17,46 @@ let { open = $bindable(false), onsound }: { open?: boolean; onsound: () => void 
 const UP_NEXT = 5;
 
 let artOpen = $state(false);
+
+// Full screen: the whole page goes full screen, and this player stays on top of it.
+const canFullscreen = document.fullscreenEnabled;
+let fullscreen = $state(!!document.fullscreenElement);
+$effect(() => {
+  const update = () => {
+    fullscreen = !!document.fullscreenElement;
+  };
+  document.addEventListener('fullscreenchange', update);
+  return () => document.removeEventListener('fullscreenchange', update);
+});
+// Closing the player also leaves full screen.
+$effect(() => {
+  if (!open && document.fullscreenElement) void document.exitFullscreen();
+});
+function toggleFullscreen() {
+  void (
+    document.fullscreenElement
+      ? document.exitFullscreen()
+      : document.documentElement.requestFullscreen()
+  ).catch(() => {});
+}
+
+// Song changes slide in from the side they came from: Next from the right,
+// Previous from the left. No motion when the person asked for less.
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)');
+let direction = $state(1);
+let lastIndex = player.index;
+$effect.pre(() => {
+  const index = player.index;
+  if (index !== lastIndex) direction = index < lastIndex ? -1 : 1;
+  lastIndex = index;
+});
+const slide = (node: Element, { delay = 0, distance = 80 } = {}) =>
+  fly(node, {
+    x: direction * distance,
+    delay,
+    duration: reduceMotion.matches ? 0 : 420,
+    easing: cubicOut,
+  });
 
 /** The next few songs in the queue, with their queue positions so they can be jumped to. */
 const upNext = $derived(
@@ -54,6 +96,16 @@ const upNext = $derived(
           title="Song art"
           onclick={() => (artOpen = true)}
         />
+        {#if canFullscreen}
+          <Button
+            variant="icon"
+            icon={fullscreen ? 'shrink' : 'expand'}
+            iconSize={22}
+            aria-label={fullscreen ? 'Exit full screen' : 'Full screen'}
+            title={fullscreen ? 'Exit full screen' : 'Full screen'}
+            onclick={toggleFullscreen}
+          />
+        {/if}
         <Button
           variant="icon"
           icon="sliders"
@@ -65,33 +117,39 @@ const upNext = $derived(
 
       <div class="stage">
         <div class="art">
-          <Cover coverId={track.coverId} artworkUrl={track.artworkUrl} size={560} fluid />
+          {#key track.id}
+            <div class="art-slide" in:slide>
+              <Cover coverId={track.coverId} artworkUrl={track.artworkUrl} size={560} fluid />
+            </div>
+          {/key}
         </div>
 
         <div class="panel">
-          <div class="info">
-            <h2 class="title">{track.title}</h2>
-            <p class="artist">
-              {#if track.artistLink}
-                <a href={track.artistLink} target="_blank" rel="noopener noreferrer"
-                  >{track.artist}</a
-                >
-                <span class="source">on Audius</span>
-              {:else}
-                {track.artist}{track.album ? `, ${track.album}` : ''}
-              {/if}
-            </p>
-            {#if track.bpm || track.key}
-              <p class="facts">
-                {#if track.bpm}
-                  <span class="fact">{track.bpm} BPM</span>
-                {/if}
-                {#if track.key}
-                  <span class="fact" title="Camelot {track.camelot}">{track.key}</span>
+          {#key track.id}
+            <div class="info" in:slide={{ delay: 60, distance: 40 }}>
+              <h2 class="title">{track.title}</h2>
+              <p class="artist">
+                {#if track.artistLink}
+                  <a href={track.artistLink} target="_blank" rel="noopener noreferrer"
+                    >{track.artist}</a
+                  >
+                  <span class="source">on Audius</span>
+                {:else}
+                  {track.artist}{track.album ? `, ${track.album}` : ''}
                 {/if}
               </p>
-            {/if}
-          </div>
+              {#if track.bpm || track.key}
+                <p class="facts">
+                  {#if track.bpm}
+                    <span class="fact">{track.bpm} BPM</span>
+                  {/if}
+                  {#if track.key}
+                    <span class="fact" title="Camelot {track.camelot}">{track.key}</span>
+                  {/if}
+                </p>
+              {/if}
+            </div>
+          {/key}
 
           <div class="playback">
             <SeekBar />

@@ -35,6 +35,8 @@ const ICONS = {
     d: 'M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6',
     fill: false,
   },
+  expand: { d: 'M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5', fill: false },
+  shrink: { d: 'M9 4v5H4M20 9h-5V4M15 20v-5h5M4 15h5v5', fill: false },
   close: { d: 'M6 6l12 12M18 6 6 18', fill: false },
   sun: {
     d: 'M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8zM12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4',
