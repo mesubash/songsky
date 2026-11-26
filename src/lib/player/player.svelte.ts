@@ -1,6 +1,7 @@
 import { AudioEngine } from '$lib/audio/engine';
 import { fadeLength } from '$lib/audio/eq';
 import { sound } from '$lib/audio/sound.svelte';
+import { JAMENDO_PREFIX } from '$lib/discover/jamendo';
 import { library } from '$lib/library/library.svelte';
 import type { Track } from '$lib/library/types';
 import { memory } from '$lib/memory/memory.svelte';
@@ -18,6 +19,12 @@ import {
 } from './queue';
 
 const STORAGE_KEY = 'songsky:player';
+
+/**
+ * Jamendo's servers only sometimes allow their audio into Web Audio, so its songs play
+ * straight to the speakers (no EQ, crossfade or visualizer) rather than failing at random.
+ */
+const playsDirect = (track: Track) => track.id.startsWith(JAMENDO_PREFIX);
 /** Pressing previous after this many seconds restarts the song instead. */
 const RESTART_AFTER = 3;
 
@@ -346,16 +353,17 @@ class Player {
         await this.#engine.crossfadeTo(
           file,
           fadeLength(sound.crossfade, fadeWithin, track.duration),
+          playsDirect(track),
         );
         void memory.record(track.id);
-      } catch {
-        this.error = 'Playback was blocked. Press play to start.';
+      } catch (error) {
+        this.#playFailed(error);
       }
       void this.#prepareNext();
       return;
     }
 
-    this.#engine.load(file, startAt);
+    this.#engine.load(file, startAt, playsDirect(track));
     void this.#prepareNext();
     if (autoplay) await this.#play();
   }
@@ -388,6 +396,9 @@ class Player {
     }
     const index = nextIndex(this.queue.length, this.index, this.repeat, true);
     if (index === null || index === this.index) return;
+    // Songs played directly can't overlap; they change when the song ends instead.
+    const next = library.byId.get(this.queue[index] ?? '');
+    if (this.#engine.direct || (next && playsDirect(next))) return;
 
     this.#fadeStarting = true;
     this.index = index;
@@ -399,12 +410,32 @@ class Player {
   async #play(): Promise<void> {
     try {
       await this.#engine.play();
+      this.#failures = 0;
       if (this.#loadedId && this.position < 1) void memory.record(this.#loadedId);
     } catch (error) {
-      if (!(error instanceof DOMException && error.name === 'AbortError')) {
-        this.error = 'Playback was blocked. Press play to start.';
-      }
+      this.#playFailed(error);
     }
+  }
+
+  /** Songs that failed to load in a row; skipping stops after a few so it can't loop. */
+  #failures = 0;
+
+  /**
+   * The browser refusing to start (it wants a tap first) is different from a song that
+   * can't load (removed or offline). The first asks for a tap; the second moves on.
+   */
+  #playFailed(error: unknown): void {
+    if (error instanceof DOMException && error.name === 'AbortError') return;
+    if (error instanceof DOMException && error.name === 'NotAllowedError') {
+      this.error = 'Playback was blocked. Press play to start.';
+      return;
+    }
+    this.#failures++;
+    const canSkip = this.#failures < 3 && this.index < this.queue.length - 1;
+    this.error = canSkip
+      ? 'This song isn’t available right now. Playing the next one.'
+      : 'This song isn’t available right now. Try another one.';
+    if (canSkip) void this.next();
   }
 
   /** Other Songsky tabs: when one starts playing, the rest pause, so only one plays at a time. */

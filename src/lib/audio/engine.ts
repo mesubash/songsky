@@ -13,10 +13,16 @@ import { EQ_BANDS } from './eq';
  * The AudioContext is created on the first play() so it starts inside a user gesture,
  * which iOS and Chrome require.
  *
+ * A third, "direct" deck plays straight to the speakers for streams whose host doesn't
+ * reliably allow Web Audio (cross-site permission comes and goes). Songs on it play without
+ * EQ, crossfade or visualizer; switching to or from it is a clean cut.
+ *
  * With `effects: false` the graph is never built and the <audio> elements play straight
  * to the speakers. iOS needs this: it suspends Web Audio when the screen locks, which
  * silences anything routed through it, while plain media elements keep playing.
  */
+
+const DIRECT = 2;
 
 export interface EngineEvents {
   timeupdate(time: number): void;
@@ -33,7 +39,8 @@ interface Deck {
 }
 
 export class AudioEngine {
-  #decks: [Deck, Deck];
+  /** Two decks through the graph (0 and 1), then the direct deck (2). */
+  #decks: [Deck, Deck, Deck];
   #active = 0;
   #events: EngineEvents;
 
@@ -53,7 +60,7 @@ export class AudioEngine {
   constructor(events: EngineEvents, { effects = true }: { effects?: boolean } = {}) {
     this.#events = events;
     this.effects = effects && typeof AudioContext !== 'undefined';
-    this.#decks = [this.#createDeck(0), this.#createDeck(1)];
+    this.#decks = [this.#createDeck(0), this.#createDeck(1), this.#createDeck(2, true)];
   }
 
   get analyser(): AnalyserNode | null {
@@ -77,12 +84,26 @@ export class AudioEngine {
     return this.#fadeTimer !== undefined;
   }
 
-  /** Loads a song on the active deck, cutting off anything still fading out. */
-  load(file: Blob | string, startAt = 0): void {
+  /** True while the playing song is on the direct deck (no EQ or visualizer for it). */
+  get direct(): boolean {
+    return this.#active === DIRECT;
+  }
+
+  /** Loads a song, cutting off anything still fading out. `direct` skips Web Audio. */
+  load(file: Blob | string, startAt = 0, direct = false): void {
     this.#finishFade();
-    this.#stop(this.#idle);
+    this.#useDeck(direct);
     this.#setSource(this.#deck, file, startAt);
     this.#setGain(this.#deck, 1);
+  }
+
+  /** Makes the direct deck or a graph deck the active one, stopping the others. */
+  #useDeck(direct: boolean): void {
+    if (direct) this.#active = DIRECT;
+    else if (this.#active === DIRECT) this.#active = 0;
+    this.#decks.forEach((deck, i) => {
+      if (i !== this.#active) this.#stop(deck);
+    });
   }
 
   async play(): Promise<void> {
@@ -101,8 +122,14 @@ export class AudioEngine {
   }
 
   /** Starts `file` on the idle deck and fades between the two over `seconds`. */
-  async crossfadeTo(file: Blob | string, seconds: number): Promise<void> {
+  async crossfadeTo(file: Blob | string, seconds: number, direct = false): Promise<void> {
     this.#finishFade();
+    // The direct deck can't be faded through Web Audio: cut instead.
+    if (direct || this.#active === DIRECT) {
+      this.load(file, 0, direct);
+      await this.#deck.audio.play();
+      return;
+    }
     const outgoing = this.#deck;
     this.#active = 1 - this.#active;
     const incoming = this.#deck;
@@ -146,15 +173,17 @@ export class AudioEngine {
     return this.#decks[this.#active] as Deck;
   }
 
+  /** The other graph deck (only meaningful while a graph deck is active). */
   get #idle(): Deck {
-    return this.#decks[1 - this.#active] as Deck;
+    return this.#decks[this.#active === 1 ? 0 : 1] as Deck;
   }
 
-  #createDeck(index: number): Deck {
+  #createDeck(index: number, direct = false): Deck {
     const audio = new Audio();
     audio.preload = 'auto';
     // Streams come from other sites; without this, Web Audio would play them as silence.
-    audio.crossOrigin = 'anonymous';
+    // The direct deck never goes through Web Audio, so it doesn't ask for permission.
+    if (!direct) audio.crossOrigin = 'anonymous';
     const deck: Deck = { audio, url: null, gain: null };
     const isActive = () => this.#active === index;
 
@@ -212,6 +241,8 @@ export class AudioEngine {
     const level = this.#muted ? 0 : this.#volume;
     if (this.#master) {
       this.#master.gain.value = level;
+      // The direct deck bypasses the master gain.
+      (this.#decks[DIRECT] as Deck).audio.volume = level;
     } else {
       // Before the graph exists, volume lives on the elements themselves.
       for (const deck of this.#decks) deck.audio.volume = level;
@@ -238,7 +269,7 @@ export class AudioEngine {
     for (let i = 0; i < chain.length - 1; i++) chain[i]?.connect(chain[i + 1] as AudioNode);
 
     const eqInput = this.#filters[0] as BiquadFilterNode;
-    for (const deck of this.#decks) {
+    for (const deck of this.#decks.slice(0, DIRECT)) {
       deck.audio.volume = 1; // Volume is now applied by the master gain.
       deck.gain = context.createGain();
       deck.gain.gain.value = deck === this.#deck ? 1 : 0;

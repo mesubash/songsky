@@ -151,12 +151,14 @@ function playAll(ids: string[], shuffle = false) {
     </section>
   {/if}
 
-  <p class="credit">
-    <Icon name="music" size={16} />
-    Songs stream from
-    <a href="https://audius.co" target="_blank" rel="noopener noreferrer">Audius</a>
-    and belong to their artists. Open a song’s page to follow and support them.
-  </p>
+  {#if tab === 'for-you' || tab === 'genres' || tab === 'playlists'}
+    <p class="credit">
+      <Icon name="music" size={16} />
+      Songs stream from
+      <a href="https://audius.co" target="_blank" rel="noopener noreferrer">Audius</a>
+      and belong to their artists. Open a song’s page to follow and support them.
+    </p>
+  {/if}
 </section>
 
 <style>

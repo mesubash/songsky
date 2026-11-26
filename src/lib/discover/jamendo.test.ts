@@ -32,6 +32,12 @@ describe('readJamendoTrack', () => {
     });
   });
 
+  it('decodes HTML entities in names', () => {
+    expect(readJamendoTrack({ ...raw, name: 'El Jimbo &amp; Mpsta' })?.title).toBe(
+      'El Jimbo & Mpsta',
+    );
+  });
+
   it('skips tracks without an https stream', () => {
     expect(readJamendoTrack({ ...raw, audio: '' })).toBeNull();
     expect(readJamendoTrack({ ...raw, audio: 'http://example.com/a.mp3' })).toBeNull();

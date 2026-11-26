@@ -44,6 +44,23 @@ describe('GET /api/jamendo', () => {
     expect(await response.json()).toEqual({ results: [{ id: '1' }] });
   });
 
+  it('retries once when Jamendo answers with nothing, and caches empty answers briefly', async () => {
+    const fetch = vi
+      .fn()
+      .mockResolvedValueOnce(Response.json({ results: [] }))
+      .mockResolvedValueOnce(Response.json({ results: [{ id: '2' }] }));
+    vi.stubGlobal('fetch', fetch);
+    const { GET } = await load('test-key');
+    const response = await GET(new Request('https://songsky.test/api/jamendo?tags=lounge'));
+    expect(fetch).toHaveBeenCalledTimes(2);
+    expect(await response.json()).toEqual({ results: [{ id: '2' }] });
+
+    const empty = vi.fn(async () => Response.json({ results: [] }));
+    vi.stubGlobal('fetch', empty);
+    const none = await GET(new Request('https://songsky.test/api/jamendo?tags=lounge'));
+    expect(none.headers.get('cache-control')).toBe('public, s-maxage=60');
+  });
+
   it('drops tags with unexpected characters', async () => {
     const fetch = vi.fn(async () => Response.json({ results: [] }));
     vi.stubGlobal('fetch', fetch);

@@ -25,6 +25,13 @@ function json(body: unknown, status: number, cache: string): Response {
   });
 }
 
+async function findTracks(params: URLSearchParams): Promise<unknown[]> {
+  const upstream = await fetch(`https://api.jamendo.com/v3.0/tracks/?${params}`);
+  if (!upstream.ok) throw new Error(`Jamendo answered ${upstream.status}`);
+  const body = (await upstream.json()) as { results?: unknown };
+  return Array.isArray(body.results) ? body.results : [];
+}
+
 const clampInt = (value: string | null, min: number, max: number, fallback: number) => {
   const n = Number.parseInt(value ?? '', 10);
   return Number.isFinite(n) ? Math.min(Math.max(n, min), max) : fallback;
@@ -52,13 +59,15 @@ export async function GET(request: Request): Promise<Response> {
   params.set('order', order && ORDERS.has(order) ? order : 'popularity_week');
 
   try {
-    const upstream = await fetch(`https://api.jamendo.com/v3.0/tracks/?${params}`);
-    if (!upstream.ok) return json({ error: 'upstream' }, 502, 'no-store');
-    const body = (await upstream.json()) as { results?: unknown };
+    // Jamendo now and then answers a valid search with no results; one retry fixes it.
+    let results = await findTracks(params);
+    if (results.length === 0) results = await findTracks(params);
     return json(
-      { results: Array.isArray(body.results) ? body.results : [] },
+      { results },
       200,
-      'public, s-maxage=3600, stale-while-revalidate=86400',
+      results.length
+        ? 'public, s-maxage=3600, stale-while-revalidate=86400'
+        : 'public, s-maxage=60',
     );
   } catch {
     return json({ error: 'upstream' }, 502, 'no-store');

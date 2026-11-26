@@ -1,4 +1,5 @@
 import type { Track } from '$lib/library/types';
+import { decodeEntities } from './audius';
 
 /**
  * Jamendo: free Creative Commons music. Requests go through Songsky's own /api/jamendo,
@@ -7,7 +8,7 @@ import type { Track } from '$lib/library/types';
 export const JAMENDO_PREFIX = 'jamendo:';
 
 const text = (value: unknown, max = 200): string | null =>
-  typeof value === 'string' && value.trim() ? value.trim().slice(0, max) : null;
+  typeof value === 'string' && value.trim() ? decodeEntities(value.trim()).slice(0, max) : null;
 const https = (value: unknown): string | undefined =>
   typeof value === 'string' && value.startsWith('https://') ? value : undefined;
 
@@ -53,11 +54,16 @@ export async function jamendoTracks(
   const params = new URLSearchParams({ order, limit: String(limit) });
   if (search) params.set('search', search);
   if (tags) params.set('tags', tags);
-  const response = await fetch(`/api/jamendo?${params}`);
-  if (!response.ok) throw new Error(`Jamendo request failed: ${response.status}`);
-  const body: { results?: unknown } = await response.json();
-  if (!Array.isArray(body.results)) return [];
-  return body.results.map((raw) => readJamendoTrack(raw)).filter((t): t is Track => t !== null);
+  const ask = async () => {
+    const response = await fetch(`/api/jamendo?${params}`);
+    if (!response.ok) throw new Error(`Jamendo request failed: ${response.status}`);
+    const body: { results?: unknown } = await response.json();
+    if (!Array.isArray(body.results)) return [];
+    return body.results.map((raw) => readJamendoTrack(raw)).filter((t): t is Track => t !== null);
+  };
+  // Jamendo now and then answers with nothing for a search that has results; ask again once.
+  const tracks = await ask();
+  return tracks.length ? tracks : ask();
 }
 
 /** True when Songsky's server has a Jamendo key, so the Jamendo tab can show. */
