@@ -30,6 +30,8 @@ export default defineConfig({
       },
     }),
   ],
+  // Lets a temporary Cloudflare tunnel reach `pnpm preview` for testing on a phone over HTTPS.
+  preview: { allowedHosts: ['.trycloudflare.com'] },
   resolve: {
     alias: { $lib: fileURLToPath(new URL('./src/lib', import.meta.url)) },
   },
