@@ -169,7 +169,7 @@ export async function renderSongArt(input: ArtInput): Promise<Blob> {
   context.font = `700 34px ${input.displayFont}`;
   context.fillStyle = palette.glow;
   context.textAlign = 'right';
-  context.fillText('attune', W - left, H - 88);
+  context.fillText('songsky', W - left, H - 88);
 
   return new Promise((resolve, reject) =>
     canvas.toBlob(

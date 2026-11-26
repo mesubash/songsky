@@ -1,8 +1,8 @@
-# Attune
+# Songsky
 
-**Music in tune with your life.**
+**Music that follows your sky.**
 
-Attune is a web music player that adapts to you: it matches your weather and time of day, plays in sync with friends, follows your walking pace, turns songs into art, and remembers where you heard them. It plays your own music files, runs entirely in the browser, and can be installed as an app.
+Songsky is a web music player that adapts to you: it matches your weather and time of day, plays in sync with friends, follows your walking pace, turns songs into art, and remembers where you heard them. It plays your own music files, runs entirely in the browser, and can be installed as an app.
 
 ## Features
 

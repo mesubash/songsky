@@ -12,7 +12,7 @@ class Pwa {
         this.updateReady = true;
       },
       onOfflineReady: () => {
-        toast.show('Attune is ready to use offline.');
+        toast.show('Songsky is ready to use offline.');
       },
     });
   }

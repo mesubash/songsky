@@ -14,7 +14,7 @@ import {
   shuffledWithFirst,
 } from './queue';
 
-const STORAGE_KEY = 'attune:player';
+const STORAGE_KEY = 'songsky:player';
 /** Pressing previous after this many seconds restarts the song instead. */
 const RESTART_AFTER = 3;
 

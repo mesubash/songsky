@@ -35,7 +35,7 @@ async function copyLink() {
 
 async function shareLink() {
   if (!together.link) return;
-  await navigator.share({ title: 'Listen with me on Attune', url: together.link }).catch(() => {});
+  await navigator.share({ title: 'Listen with me on Songsky', url: together.link }).catch(() => {});
 }
 
 async function send(event: SubmitEvent) {

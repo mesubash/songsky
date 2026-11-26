@@ -1,7 +1,7 @@
 import { type DBSchema, type IDBPDatabase, openDB } from 'idb';
 import type { PlayRecord, Track } from './types';
 
-interface AttuneDB extends DBSchema {
+interface SongskyDB extends DBSchema {
   tracks: { key: string; value: Track };
   covers: { key: string; value: Blob };
   /** Copied audio for browsers without folder access. */
@@ -10,10 +10,10 @@ interface AttuneDB extends DBSchema {
   history: { key: number; value: PlayRecord; indexes: { byTrack: string } };
 }
 
-let connection: Promise<IDBPDatabase<AttuneDB>> | undefined;
+let connection: Promise<IDBPDatabase<SongskyDB>> | undefined;
 
-export function db(): Promise<IDBPDatabase<AttuneDB>> {
-  connection ??= openDB<AttuneDB>('attune', 1, {
+export function db(): Promise<IDBPDatabase<SongskyDB>> {
+  connection ??= openDB<SongskyDB>('songsky', 1, {
     upgrade(database) {
       database.createObjectStore('tracks', { keyPath: 'id' });
       database.createObjectStore('covers');

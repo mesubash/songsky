@@ -1,8 +1,8 @@
 {
-  "name": "attune",
+  "name": "songsky",
   "private": true,
   "version": "0.0.0",
-  "description": "A web music player in tune with your life.",
+  "description": "A web music player that follows your sky.",
   "license": "MIT",
   "type": "module",
   "scripts": {

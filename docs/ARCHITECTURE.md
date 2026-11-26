@@ -1,6 +1,6 @@
 # Architecture
 
-Attune is a client-only web app. There is no backend: music files, library data and listening history all stay in the browser.
+Songsky is a client-only web app. There is no backend: music files, library data and listening history all stay in the browser.
 
 ## Overview
 
@@ -40,7 +40,7 @@ Two `<audio>` elements act as decks. Crossfading ramps gain A down while gain B 
 | `files`   | Copied audio for browsers without folder access (Safari, Firefox)              |
 | `history` | Each play: track, time, optional location                                      |
 
-The current queue, position, volume, shuffle and repeat are saved to `localStorage`, so Attune reopens where you left off.
+The current queue, position, volume, shuffle and repeat are saved to `localStorage`, so Songsky reopens where you left off.
 
 ## Project layout
 

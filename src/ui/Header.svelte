@@ -7,7 +7,7 @@ import TogetherButton from './TogetherButton.svelte';
 </script>
 
 <header class="header">
-  <h1 class="wordmark">attune<span class="visually-hidden"> music player</span></h1>
+  <h1 class="wordmark">songsky<span class="visually-hidden"> music player</span></h1>
 
   <div class="actions">
     <SkyControl />

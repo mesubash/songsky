@@ -7,7 +7,7 @@ import {
   type Weather,
 } from './weather';
 
-const STORAGE_KEY = 'attune:sky';
+const STORAGE_KEY = 'songsky:sky';
 const REFRESH_MS = 30 * 60 * 1000;
 const TICK_MS = 5 * 60 * 1000;
 

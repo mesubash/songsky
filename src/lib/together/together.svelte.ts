@@ -25,11 +25,11 @@ import {
 } from './sync';
 
 /** Peers only find each other within the same app id. */
-const APP_ID = 'attune.music-player';
+const APP_ID = 'songsky.music-player';
 const BROADCAST_MS = 1000;
 const MAX_SONG_BYTES = 80 * 1024 * 1024;
 const MAX_MESSAGES = 100;
-const NAME_KEY = 'attune:name';
+const NAME_KEY = 'songsky:name';
 
 interface Actions {
   song: MessageAction<Blob | ArrayBuffer | ArrayBufferView>;

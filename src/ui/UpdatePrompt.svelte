@@ -5,7 +5,7 @@ import Button from './Button.svelte';
 
 {#if pwa.updateReady}
   <div class="update" role="alert">
-    <p>A new version of Attune is ready.</p>
+    <p>A new version of Songsky is ready.</p>
     <div class="actions">
       <Button onclick={() => pwa.dismiss()}>Later</Button>
       <Button variant="primary" onclick={() => pwa.update()}>Update</Button>

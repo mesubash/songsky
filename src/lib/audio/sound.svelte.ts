@@ -1,6 +1,6 @@
 import { EQ_BANDS, EQ_PRESETS, EQ_RANGE_DB, type EqPresetId, presetFor } from './eq';
 
-const STORAGE_KEY = 'attune:sound';
+const STORAGE_KEY = 'songsky:sound';
 export const CROSSFADE_MAX = 12;
 const CROSSFADE_DEFAULT = 4;
 

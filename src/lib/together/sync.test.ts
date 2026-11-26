@@ -18,8 +18,8 @@ describe('session links', () => {
   const session = { room: randomId(10), password: randomId(20) };
 
   it('round-trips through a link and drops the old hash', () => {
-    const link = sessionLink('https://example.com/attune/#memories', session);
-    expect(link.startsWith('https://example.com/attune/?room=')).toBe(true);
+    const link = sessionLink('https://example.com/songsky/#memories', session);
+    expect(link.startsWith('https://example.com/songsky/?room=')).toBe(true);
     expect(parseSession(link)).toEqual(session);
   });
 

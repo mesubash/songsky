@@ -3,7 +3,7 @@ import type { PlayRecord } from '$lib/library/types';
 import { sky } from '$lib/sky/sky.svelte';
 import { groupByPlace } from './places';
 
-const STORAGE_KEY = 'attune:memory';
+const STORAGE_KEY = 'songsky:memory';
 
 /** Listening history, and whether to remember where each song was played. */
 class Memory {

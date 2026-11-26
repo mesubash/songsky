@@ -46,8 +46,8 @@ function startTrack(trackId: string) {
 
   {#if memory.rememberPlaces && !sky.place}
     <p class="hint">
-      Use the sky button at the top to share your location or pick a city, so Attune knows where you
-      are.
+      Use the sky button at the top to share your location or pick a city, so Songsky knows where
+      you are.
     </p>
   {:else if !memory.rememberPlaces && placeCount === 0}
     <p class="hint">

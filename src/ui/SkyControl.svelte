@@ -108,7 +108,7 @@ function closeOnBackdrop(event: MouseEvent) {
         <strong>{sky.weather.label}, {sky.weather.temperature}°</strong>
         {sky.source === 'location' ? 'where you are' : `in ${sky.place.name}`}.
       {:else}
-        Attune is following the time of day. Add your weather to tint the sky and suggest a sound.
+        Songsky is following the time of day. Add your weather to tint the sky and suggest a sound.
       {/if}
     </p>
 

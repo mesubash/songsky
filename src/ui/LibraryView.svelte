@@ -20,7 +20,7 @@ function playMix() {
 }
 
 function clearLibrary() {
-  if (confirm('Remove all songs from Attune? Your files on this device are not deleted.')) {
+  if (confirm('Remove all songs from Songsky? Your files on this device are not deleted.')) {
     player.pause();
     void library.clear();
     memory.forget();

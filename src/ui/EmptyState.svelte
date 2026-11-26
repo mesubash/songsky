@@ -6,8 +6,8 @@ import Button from './Button.svelte';
 <section class="empty" aria-labelledby="empty-title">
   <h2 id="empty-title" class="headline">Bring your own music.</h2>
   <p class="lead">
-    Attune plays songs saved on this device. Nothing is uploaded, and your library is here next time
-    you open it.
+    Songsky plays songs saved on this device. Nothing is uploaded, and your library is here next
+    time you open it.
   </p>
   <div class="actions">
     {#if library.canPickFolder}

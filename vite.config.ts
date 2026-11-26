@@ -15,17 +15,17 @@ export default defineConfig({
       pwaAssets: { config: true },
       manifest: {
         id: '/',
-        name: 'Attune – Music Player',
-        short_name: 'Attune',
+        name: 'Songsky – Music Player',
+        short_name: 'Songsky',
         description:
-          'A music player in tune with your life. Plays your own files and adapts to your weather, mood and pace.',
+          'A free music player for the songs on your device. Works offline and follows your weather, mood and pace.',
         theme_color: SKY,
         background_color: SKY,
         display: 'standalone',
         categories: ['music', 'entertainment'],
       },
       workbox: {
-        // App shell, lazy chunks and fonts are all cached so Attune opens offline.
+        // App shell, lazy chunks and fonts are all cached so Songsky opens offline.
         globPatterns: ['**/*.{js,css,html,woff2,svg,png,ico}'],
       },
     }),

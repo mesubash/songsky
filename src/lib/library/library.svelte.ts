@@ -53,7 +53,7 @@ class Library {
   async addFolder(): Promise<void> {
     let dir: FileSystemDirectoryHandle;
     try {
-      dir = await window.showDirectoryPicker({ id: 'attune-music', mode: 'read' });
+      dir = await window.showDirectoryPicker({ id: 'songsky-music', mode: 'read' });
     } catch (error) {
       if (isAbortError(error)) return;
       throw error;
@@ -76,7 +76,7 @@ class Library {
     const picked = chosen.filter((file) => isAudioFile(file.name));
     if (chosen.length > 0 && picked.length === 0) {
       toast.show(
-        'Those files aren’t songs Attune can play. Choose MP3, M4A, FLAC, WAV or OGG files.',
+        'Those files aren’t songs Songsky can play. Choose MP3, M4A, FLAC, WAV or OGG files.',
       );
       return;
     }
@@ -134,7 +134,7 @@ class Library {
     this.progress = null;
     toast.show(
       copyFailed
-        ? 'Storage is full, so some songs will only play until you close Attune.'
+        ? 'Storage is full, so some songs will only play until you close Songsky.'
         : `Added ${results.length} ${results.length === 1 ? 'song' : 'songs'}.`,
     );
   }

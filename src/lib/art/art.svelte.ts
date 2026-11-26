@@ -33,7 +33,7 @@ function fileName(title: string): string {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-|-$/g, '');
-  return `${slug || 'song'}-attune.png`;
+  return `${slug || 'song'}-songsky.png`;
 }
 
 /** Phones get the share sheet; computers download the picture. */
