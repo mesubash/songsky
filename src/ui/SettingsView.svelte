@@ -6,6 +6,7 @@ import { jamendoAvailable } from '$lib/discover/jamendo';
 import { SHORTCUTS } from '$lib/keys/shortcuts';
 import { library } from '$lib/library/library.svelte';
 import { memory } from '$lib/memory/memory.svelte';
+import { installSteps } from '$lib/platform';
 import { player } from '$lib/player/player.svelte';
 import { playlists } from '$lib/playlists/playlists.svelte';
 import { prefs } from '$lib/prefs.svelte';
@@ -248,6 +249,10 @@ async function clearLibrary() {
 
 const APP_URL = 'https://songsky.subashsdhami.com.np';
 const REPO_URL = 'https://github.com/mesubash/songsky';
+
+/** Browsers without an install prompt (iPhone, Safari, Firefox) get written steps instead. */
+const steps = installSteps();
+let showSteps = $state(false);
 
 /**
  * The repository's star count, read from GitHub's public API when About opens. GitHub
@@ -816,12 +821,27 @@ const CREDITS: { name: string; what: string; url: string }[] = [
               <Button variant="primary" icon="download" onclick={() => pwa.install()}
                 >Install app</Button
               >
+            {:else if steps}
+              <Button
+                variant="primary"
+                icon="download"
+                aria-expanded={showSteps}
+                onclick={() => (showSteps = !showSteps)}
+                >Install app</Button
+              >
             {/if}
             <Button disabled={pwa.checking} onclick={() => pwa.checkForUpdates()}
               >{pwa.checking ? 'Checking…' : 'Check for updates'}</Button
             >
             <Button icon="share" onclick={shareApp}>Share Songsky</Button>
           </div>
+          {#if showSteps && steps && !pwa.installed}
+            <ol class="install-steps">
+              {#each steps as step (step)}
+                <li>{step}</li>
+              {/each}
+            </ol>
+          {/if}
         </div>
 
         <div class="github">
@@ -1272,6 +1292,17 @@ kbd {
   font-size: var(--text-2xl);
   font-weight: var(--display-weight);
   letter-spacing: -0.03em;
+}
+
+.install-steps {
+  display: grid;
+  gap: var(--space-2);
+  max-width: 26rem;
+  margin: var(--space-4) auto 0;
+  padding: var(--space-4) var(--space-4) var(--space-4) var(--space-8);
+  border-radius: var(--radius-md);
+  background: var(--surface-strong);
+  text-align: start;
 }
 
 .hero-actions {

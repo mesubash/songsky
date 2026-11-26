@@ -13,7 +13,11 @@ class Pwa {
   /** The browser will let us show its install prompt. */
   canInstall = $state(false);
   /** Running as an installed app (its own window, no browser bar). */
-  installed = $state(matchMedia('(display-mode: standalone)').matches);
+  installed = $state(
+    matchMedia('(display-mode: standalone)').matches ||
+      // iPhone and iPad report the installed app this way instead.
+      (navigator as Navigator & { standalone?: boolean }).standalone === true,
+  );
   checking = $state(false);
   #applyUpdate: ((reload?: boolean) => Promise<void>) | undefined;
   #registration: ServiceWorkerRegistration | undefined;
