@@ -4,14 +4,29 @@ import { player } from '$lib/player/player.svelte';
 import { together } from '$lib/together/together.svelte';
 import Button from './Button.svelte';
 import Logo from './Logo.svelte';
+import SearchBox from './SearchBox.svelte';
 import SkyControl from './SkyControl.svelte';
 import TogetherButton from './TogetherButton.svelte';
+
+/** See-through at the top of the page; a soft band appears once content scrolls under it. */
+let scrolled = $state(false);
+
+$effect(() => {
+  const update = () => {
+    scrolled = window.scrollY > 4;
+  };
+  update();
+  addEventListener('scroll', update, { passive: true });
+  return () => removeEventListener('scroll', update);
+});
 </script>
 
-<header class="header">
+<header class="header" class:scrolled>
   <h1 class="wordmark">
     <Logo size={34} />songsky<span class="visually-hidden"> music player</span>
   </h1>
+
+  <div class="header-search"><SearchBox id="header-search" /></div>
 
   <div class="actions">
     <SkyControl />
@@ -46,9 +61,21 @@ import TogetherButton from './TogetherButton.svelte';
   padding-block: var(--space-3);
   padding-top: max(var(--space-3), env(safe-area-inset-top));
   padding-inline: var(--gutter);
-  background: color-mix(in srgb, var(--sky-top) 72%, transparent);
-  backdrop-filter: blur(18px) saturate(1.3);
-  -webkit-backdrop-filter: blur(18px) saturate(1.3);
+  transition:
+    background-color 200ms var(--ease-out),
+    box-shadow 200ms var(--ease-out);
+}
+
+.scrolled {
+  background: color-mix(in srgb, var(--sky-top) 55%, transparent);
+  box-shadow: 0 8px 24px -16px rgb(0 0 0 / 0.35);
+  backdrop-filter: blur(20px) saturate(1.4);
+  -webkit-backdrop-filter: blur(20px) saturate(1.4);
+}
+
+.header-search {
+  display: none;
+  flex: 1;
 }
 
 .wordmark {
@@ -78,7 +105,6 @@ import TogetherButton from './TogetherButton.svelte';
 /* Desktop: the sidebar shows the logo, so the header keeps only its actions. */
 @media (min-width: 1100px) {
   .header {
-    justify-content: flex-end;
     margin-inline: 0;
     padding-inline: max(var(--gutter), calc((100% - var(--content-max)) / 2));
   }
@@ -90,6 +116,12 @@ import TogetherButton from './TogetherButton.svelte';
     overflow: hidden;
     clip-path: inset(50%);
     white-space: nowrap;
+  }
+}
+
+@media (min-width: 960px) {
+  .header-search {
+    display: block;
   }
 }
 </style>

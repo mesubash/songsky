@@ -15,6 +15,10 @@ class Discover {
   skyStatus = $state<Status>('idle');
   trendingStatus = $state<Status>('idle');
   searching = $state(false);
+  /** What is typed in the search box (shared by the header and Discover). */
+  query = $state('');
+  /** The query the current results are for. */
+  searched = $state('');
   searchError = $state(false);
 
   #loadedMoods = '';
@@ -28,8 +32,10 @@ class Discover {
     const q = query.trim();
     if (!q) {
       this.results = null;
+      this.searched = '';
       return;
     }
+    this.searched = q;
     this.searching = true;
     this.searchError = false;
     try {

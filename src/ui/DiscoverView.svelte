@@ -3,10 +3,9 @@ import { discover } from '$lib/discover/discover.svelte';
 import { player } from '$lib/player/player.svelte';
 import Button from './Button.svelte';
 import Icon from './Icon.svelte';
+import SearchBox from './SearchBox.svelte';
 import TrackList from './TrackList.svelte';
 import TrackSkeleton from './TrackSkeleton.svelte';
-
-let query = $state('');
 
 // Fetch on open, and again whenever the sky's mood changes.
 $effect(() => {
@@ -29,40 +28,13 @@ function playAll(ids: string[], shuffle = false) {
       <h2 id="discover-title" class="title">Discover</h2>
       <p class="meta">Free music from independent artists on Audius.</p>
     </div>
-    <search>
-      <form
-        class="search"
-        onsubmit={(e) => {
-          e.preventDefault();
-          void discover.search(query);
-        }}
-      >
-        <label class="visually-hidden" for="discover-search">Search songs and artists</label>
-        <input
-          id="discover-search"
-          type="search"
-          bind:value={query}
-          placeholder="Search Audius"
-          enterkeyhint="search"
-          oninput={() => {
-            if (!query.trim()) discover.results = null;
-          }}
-        >
-        <Button
-          variant="icon"
-          icon="search"
-          type="submit"
-          aria-label="Search"
-          disabled={discover.searching}
-        />
-      </form>
-    </search>
+    <div class="page-search"><SearchBox id="discover-search" /></div>
   </div>
 
   {#if discover.results}
     <section class="block" aria-labelledby="results-title">
       <div class="block-head">
-        <h3 id="results-title">Results for “{query.trim()}”</h3>
+        <h3 id="results-title">Results for “{discover.searched}”</h3>
       </div>
       {#if discover.results.length}
         <TrackList tracks={discover.results} />
@@ -159,26 +131,6 @@ h3 {
   color: var(--text-muted);
 }
 
-.search {
-  display: flex;
-  gap: var(--space-2);
-  width: min(100%, 22rem);
-}
-
-.search input {
-  flex: 1;
-  min-width: 0;
-  min-height: 44px;
-  padding: 0 var(--space-4);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-full);
-  background: var(--surface);
-}
-
-.search input::placeholder {
-  color: var(--text-muted);
-}
-
 .block {
   display: grid;
   gap: var(--space-3);
@@ -200,5 +152,12 @@ h3 {
 
 .credit a {
   color: var(--text);
+}
+
+/* Desktop has search in the header, so the page's own box only shows on smaller screens. */
+@media (min-width: 960px) {
+  .page-search {
+    display: none;
+  }
 }
 </style>
