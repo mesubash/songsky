@@ -1,7 +1,9 @@
 <script lang="ts">
 import { library } from '$lib/library/library.svelte';
+import { together } from '$lib/together/together.svelte';
 import Button from './Button.svelte';
 import SkyControl from './SkyControl.svelte';
+import TogetherButton from './TogetherButton.svelte';
 </script>
 
 <header class="header">
@@ -9,6 +11,9 @@ import SkyControl from './SkyControl.svelte';
 
   <div class="actions">
     <SkyControl />
+    {#if library.tracks.length > 0 || together.invite}
+      <TogetherButton />
+    {/if}
     {#if library.tracks.length > 0}
       {#if library.canPickFolder}
         <Button icon="folder" aria-label="Add folder" onclick={() => library.addFolder()}>
