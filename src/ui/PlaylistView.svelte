@@ -1,4 +1,5 @@
 <script lang="ts">
+import { ask } from '$lib/confirm.svelte';
 import { formatLength } from '$lib/format';
 import { library } from '$lib/library/library.svelte';
 import type { Track } from '$lib/library/types';
@@ -41,9 +42,14 @@ function focusAndSelect(node: HTMLInputElement) {
   node.select();
 }
 
-function deletePlaylist() {
+async function deletePlaylist() {
   if (!playlist) return;
-  if (!confirm(`Delete “${playlist.name}”? The songs stay in your library.`)) return;
+  const ok = await ask({
+    title: `Delete “${playlist.name}”?`,
+    message: 'The playlist is removed. Its songs stay in your library.',
+    action: 'Delete playlist',
+  });
+  if (!ok) return;
   void playlists.delete(playlist.id);
   toast.show(`Deleted ${playlist.name}.`);
   location.hash = '#library';

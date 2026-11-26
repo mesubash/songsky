@@ -1,6 +1,7 @@
 <script lang="ts">
 import { EQ_PRESETS, type EqPresetId } from '$lib/audio/eq';
 import { CROSSFADE_MAX, sound } from '$lib/audio/sound.svelte';
+import { ask } from '$lib/confirm.svelte';
 import { SHORTCUTS } from '$lib/keys/shortcuts';
 import { library } from '$lib/library/library.svelte';
 import { memory } from '$lib/memory/memory.svelte';
@@ -89,30 +90,47 @@ async function newPlaylist() {
   startRename(playlist.id, playlist.name);
 }
 
-function deletePlaylist(id: string, name: string) {
-  if (!confirm(`Delete “${name}”? The songs stay in your library.`)) return;
+async function deletePlaylist(id: string, name: string) {
+  const ok = await ask({
+    title: `Delete “${name}”?`,
+    message: 'The playlist is removed. Its songs stay in your library.',
+    action: 'Delete playlist',
+  });
+  if (!ok) return;
   void playlists.delete(id);
   toast.show(`Deleted ${name}.`);
 }
 
-function clearHistory() {
-  if (!confirm('Delete your listening history and places? Your songs and playlists stay.')) return;
+async function clearHistory() {
+  const ok = await ask({
+    title: 'Delete listening history?',
+    message: `${plural(memory.plays.length, 'play')}, Recently played and the places on your map are removed. Songs and playlists stay.`,
+    action: 'Delete history',
+  });
+  if (!ok) return;
   void memory.clearHistory();
   toast.show('Listening history deleted.');
 }
 
-function deleteAllPlaylists() {
-  if (!confirm(`Delete all ${playlists.list.length} playlists? The songs stay in your library.`))
-    return;
+async function deleteAllPlaylists() {
+  const ok = await ask({
+    title: `Delete all ${plural(playlists.list.length, 'playlist')}?`,
+    message: 'Every playlist is removed. The songs stay in your library.',
+    action: 'Delete all',
+  });
+  if (!ok) return;
   for (const playlist of playlists.list) void playlists.delete(playlist.id);
   toast.show('All playlists deleted.');
 }
 
-function clearLibrary() {
-  if (
-    !confirm('Remove all songs and playlists from Songsky? Files on your device are not deleted.')
-  )
-    return;
+async function clearLibrary() {
+  const ok = await ask({
+    title: 'Clear your library?',
+    message:
+      'Every song, playlist and play is removed from Songsky. Music files on your device are not touched.',
+    action: 'Clear library',
+  });
+  if (!ok) return;
   player.pause();
   void library.clear();
   memory.forget();
@@ -120,8 +138,42 @@ function clearLibrary() {
   toast.show('Library cleared.');
 }
 
+/** The section being read, highlighted in the list on the left as you scroll. */
+let active = $state(SECTIONS[0]?.id ?? '');
+/** A clicked section stays highlighted while the page scrolls to it. */
+let clickedAt = 0;
+const settling = () => Date.now() - clickedAt < 1200;
+
+$effect(() => {
+  const headings = SECTIONS.flatMap((s) => document.getElementById(s.id) ?? []);
+  // A heading counts as "current" once it passes just under the top bar.
+  const observer = new IntersectionObserver(
+    () => {
+      if (settling()) return;
+      const passed = headings.filter((h) => h.getBoundingClientRect().top < innerHeight * 0.35);
+      const atBottom = innerHeight + scrollY >= document.documentElement.scrollHeight - 4;
+      active = (atBottom ? headings.at(-1) : passed.at(-1))?.id ?? SECTIONS[0]?.id ?? '';
+    },
+    { rootMargin: '-80px 0px -60% 0px', threshold: [0, 1] },
+  );
+  for (const heading of headings) observer.observe(heading);
+  const onScroll = () => {
+    if (settling()) return;
+    if (innerHeight + scrollY >= document.documentElement.scrollHeight - 4) {
+      active = headings.at(-1)?.id ?? active;
+    }
+  };
+  addEventListener('scroll', onScroll, { passive: true });
+  return () => {
+    observer.disconnect();
+    removeEventListener('scroll', onScroll);
+  };
+});
+
 function jumpTo(event: MouseEvent, id: string) {
   event.preventDefault();
+  active = id;
+  clickedAt = Date.now();
   document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 </script>
@@ -132,7 +184,14 @@ function jumpTo(event: MouseEvent, id: string) {
   <nav class="index" aria-label="Settings sections">
     <ul>
       {#each SECTIONS as section (section.id)}
-        <li><a href="#settings" onclick={(e) => jumpTo(e, section.id)}>{section.label}</a></li>
+        <li>
+          <a
+            href="#settings"
+            aria-current={active === section.id ? 'location' : undefined}
+            onclick={(e) => jumpTo(e, section.id)}
+            >{section.label}</a
+          >
+        </li>
       {/each}
     </ul>
   </nav>
@@ -675,6 +734,9 @@ kbd {
 
   .index a {
     display: block;
+    transition:
+      background-color var(--duration-fast) var(--ease-out),
+      color var(--duration-fast) var(--ease-out);
     padding: var(--space-2) var(--space-3);
     border-radius: var(--radius-md);
     color: var(--text-muted);
@@ -686,6 +748,25 @@ kbd {
   .index a:hover {
     background: var(--surface);
     color: var(--text);
+  }
+
+  /* The section you're reading: filled, with a bar on the left like the main sidebar. */
+  .index a[aria-current="location"] {
+    position: relative;
+    background: var(--surface-strong);
+    color: var(--text);
+    font-weight: 650;
+  }
+
+  .index a[aria-current="location"]::before {
+    content: "";
+    position: absolute;
+    top: 8px;
+    bottom: 8px;
+    left: 0;
+    width: 3px;
+    border-radius: 3px;
+    background: var(--accent);
   }
 }
 

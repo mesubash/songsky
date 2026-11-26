@@ -1,5 +1,6 @@
 <script lang="ts">
 import { analyzer } from '$lib/analysis/analyzer.svelte';
+import { ask } from '$lib/confirm.svelte';
 import { formatLength } from '$lib/format';
 import { browse, SORT_LABELS, type SortOrder } from '$lib/library/browse';
 import { library } from '$lib/library/library.svelte';
@@ -35,13 +36,18 @@ function setOrder(next: SortOrder) {
   }
 }
 
-function clearLibrary() {
-  if (confirm('Remove all songs from Songsky? Your files on this device are not deleted.')) {
-    player.pause();
-    void library.clear();
-    memory.forget();
-    playlists.forget();
-  }
+async function clearLibrary() {
+  const ok = await ask({
+    title: 'Clear your library?',
+    message:
+      'Every song, playlist and play is removed from Songsky. Music files on your device are not touched.',
+    action: 'Clear library',
+  });
+  if (!ok) return;
+  player.pause();
+  void library.clear();
+  memory.forget();
+  playlists.forget();
 }
 </script>
 

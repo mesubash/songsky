@@ -8,6 +8,7 @@ import { player } from '$lib/player/player.svelte';
 import { playlists } from '$lib/playlists/playlists.svelte';
 import { toast } from '$lib/toast.svelte';
 import { view } from '$lib/view.svelte';
+import ConfirmDialog from './ui/ConfirmDialog.svelte';
 import DiscoverView from './ui/DiscoverView.svelte';
 import EmptyState from './ui/EmptyState.svelte';
 import Header from './ui/Header.svelte';
@@ -180,6 +181,7 @@ $effect(() => {
 <SoundPanel bind:open={soundOpen} />
 <QueuePanel bind:open={queueOpen} />
 <ShortcutsDialog bind:open={shortcutsOpen} />
+<ConfirmDialog />
 <StatusMessage />
 <UpdatePrompt />
 
