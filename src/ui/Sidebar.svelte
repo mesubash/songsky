@@ -3,8 +3,9 @@ import { discover } from '$lib/discover/discover.svelte';
 import { library } from '$lib/library/library.svelte';
 import { memory } from '$lib/memory/memory.svelte';
 import { player } from '$lib/player/player.svelte';
+import { playlists } from '$lib/playlists/playlists.svelte';
 import { sky } from '$lib/sky/sky.svelte';
-import { type View, view } from '$lib/view.svelte';
+import { playlistHref, type View, view } from '$lib/view.svelte';
 import Cover from './Cover.svelte';
 import Icon, { type IconName } from './Icon.svelte';
 import Logo from './Logo.svelte';
@@ -37,6 +38,11 @@ const skyLine = $derived(
   sky.weather ? `${sky.weather.label}, ${sky.weather.temperature}°` : 'Following the time of day',
 );
 
+async function newPlaylist() {
+  const playlist = await playlists.create();
+  location.hash = playlistHref(playlist.id);
+}
+
 function playRecent(id: string) {
   const ids = library.tracks.map((t) => t.id);
   const index = ids.indexOf(id);
@@ -66,6 +72,39 @@ function playRecent(id: string) {
       {/each}
     </ul>
   </nav>
+
+  <section class="playlists" aria-labelledby="playlists-title">
+    <div class="section-head">
+      <h2 id="playlists-title">Playlists</h2>
+      <button
+        class="new"
+        type="button"
+        aria-label="New playlist"
+        title="New playlist"
+        onclick={newPlaylist}
+      >
+        <Icon name="plus" size={16} />
+      </button>
+    </div>
+    {#if playlists.list.length}
+      <ul>
+        {#each playlists.list as playlist (playlist.id)}
+          <li>
+            <a
+              class="playlist-link"
+              href={playlistHref(playlist.id)}
+              aria-current={view.current === 'playlist' && view.playlistId === playlist.id
+                ? 'page'
+                : undefined}
+              >{playlist.name}</a
+            >
+          </li>
+        {/each}
+      </ul>
+    {:else}
+      <p class="none">Make one with + or from any song’s ⋯ menu.</p>
+    {/if}
+  </section>
 
   <a class="sky-card" href="#discover">
     <span class="sky-line">{skyLine}</span>
@@ -158,6 +197,55 @@ nav a {
 nav a:hover {
   background: var(--surface);
   color: var(--text);
+}
+
+.playlists {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-left: var(--space-3);
+}
+
+.section-head h2,
+.recent h2 {
+  color: var(--text-muted);
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.new {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: var(--text-muted);
+}
+
+.new:hover {
+  background: var(--surface);
+  color: var(--text);
+}
+
+.playlists ul {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.none {
+  padding-inline: var(--space-3);
+  color: var(--text-muted);
+  font-size: var(--text-xs);
 }
 
 nav a[aria-current="page"] {
@@ -272,5 +360,27 @@ nav a[aria-current="page"] {
 
 .recent button.current .title {
   color: var(--accent);
+}
+.playlist-link {
+  display: block;
+  overflow: hidden;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  font-weight: 550;
+  text-decoration: none;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.playlist-link:hover {
+  background: var(--surface);
+  color: var(--text);
+}
+
+.playlist-link[aria-current="page"] {
+  background: var(--surface-strong);
+  color: var(--text);
 }
 </style>

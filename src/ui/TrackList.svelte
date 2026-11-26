@@ -11,10 +11,15 @@ import TrackMenu from './TrackMenu.svelte';
 let {
   tracks,
   compact = false,
+  onremove,
+  removeLabel,
 }: {
   tracks: Track[];
   /** Narrow places (a card): no album or tempo columns, so titles get the room. */
   compact?: boolean;
+  /** Adds a remove item to each song's menu (e.g. "Remove from this playlist"). */
+  onremove?: (track: Track) => void;
+  removeLabel?: string;
 } = $props();
 
 const ids = $derived(tracks.map((t) => t.id));
@@ -74,7 +79,7 @@ const hasStreams = $derived(tracks.some((t) => t.source === 'stream'));
             </a>
           {/if}
         {/if}
-        <TrackMenu {track} />
+        <TrackMenu {track} {onremove} {removeLabel} />
       </span>
     </li>
   {/each}

@@ -28,6 +28,8 @@ const page = $derived.by((): { title: string; subtitle: string } | null => {
         : 'Songs you play show up here',
     };
   }
+  // A playlist page has its own large heading, so the top bar stays clear.
+  if (view.current === 'playlist') return null;
   const count = library.tracks.length;
   if (!count) return null;
   const length = library.totalDuration ? `, ${formatLength(library.totalDuration)}` : '';

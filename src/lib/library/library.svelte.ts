@@ -235,7 +235,7 @@ class Library {
 
   async clear(): Promise<void> {
     const database = await db();
-    const stores = ['tracks', 'covers', 'files', 'folders', 'history'] as const;
+    const stores = ['tracks', 'covers', 'files', 'folders', 'history', 'playlists'] as const;
     await Promise.all(stores.map((store) => database.clear(store)));
     for (const url of this.#coverUrls.values()) void url.then((u) => u && URL.revokeObjectURL(u));
     this.#coverUrls.clear();

@@ -42,3 +42,12 @@ export interface PlayRecord {
   /** Streamed songs: a copy of the song's details, so history can show and replay it later. */
   stream?: Track;
 }
+
+export interface Playlist {
+  id: string;
+  name: string;
+  /** Songs in play order. Each song appears once. */
+  trackIds: string[];
+  createdAt: number;
+  updatedAt: number;
+}

@@ -5,6 +5,8 @@ import { browse, SORT_LABELS, type SortOrder } from '$lib/library/browse';
 import { library } from '$lib/library/library.svelte';
 import { memory } from '$lib/memory/memory.svelte';
 import { player } from '$lib/player/player.svelte';
+import { playlists } from '$lib/playlists/playlists.svelte';
+import { playlistHref } from '$lib/view.svelte';
 import Icon from './Icon.svelte';
 import LibraryActions from './LibraryActions.svelte';
 import TrackList from './TrackList.svelte';
@@ -18,6 +20,11 @@ let order = $state<SortOrder>(
     'artist',
 );
 const shown = $derived(browse(library.tracks, query, order));
+
+async function newPlaylist() {
+  const playlist = await playlists.create();
+  location.hash = playlistHref(playlist.id);
+}
 
 function setOrder(next: SortOrder) {
   order = next;
@@ -33,6 +40,7 @@ function clearLibrary() {
     player.pause();
     void library.clear();
     memory.forget();
+    playlists.forget();
   }
 }
 </script>
@@ -82,6 +90,14 @@ function clearLibrary() {
       <button class="clear" type="button" onclick={clearLibrary}>Clear library</button>
     </div>
   </div>
+
+  <!-- Phones have no sidebar, so playlists show here as a row of chips. -->
+  <nav class="playlist-chips" aria-label="Playlists">
+    {#each playlists.list as playlist (playlist.id)}
+      <a href={playlistHref(playlist.id)}>{playlist.name}</a>
+    {/each}
+    <button type="button" onclick={newPlaylist}>+ New playlist</button>
+  </nav>
 
   {#if shown.length}
     <TrackList tracks={shown} />
@@ -161,6 +177,42 @@ function clearLibrary() {
   color: var(--text);
   font: inherit;
   font-size: var(--text-sm);
+}
+
+.playlist-chips {
+  display: flex;
+  gap: var(--space-2);
+  padding-bottom: var(--space-4);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.playlist-chips a,
+.playlist-chips button {
+  flex: none;
+  display: grid;
+  place-items: center;
+  min-height: 36px;
+  padding: 0 var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-full);
+  background: var(--surface);
+  color: var(--text);
+  font-size: var(--text-sm);
+  font-weight: 550;
+  text-decoration: none;
+}
+
+.playlist-chips button {
+  background: none;
+  color: var(--text-muted);
+}
+
+/* Desktop lists playlists in the sidebar instead. */
+@media (min-width: 1100px) {
+  .playlist-chips {
+    display: none;
+  }
 }
 
 .no-match {

@@ -5,6 +5,7 @@ import { isAudioFile } from '$lib/library/files';
 import { library } from '$lib/library/library.svelte';
 import { memory } from '$lib/memory/memory.svelte';
 import { player } from '$lib/player/player.svelte';
+import { playlists } from '$lib/playlists/playlists.svelte';
 import { toast } from '$lib/toast.svelte';
 import { view } from '$lib/view.svelte';
 import DiscoverView from './ui/DiscoverView.svelte';
@@ -14,6 +15,7 @@ import LibraryView from './ui/LibraryView.svelte';
 import MemoriesView from './ui/MemoriesView.svelte';
 import NowPlaying from './ui/NowPlaying.svelte';
 import PlayerBar from './ui/PlayerBar.svelte';
+import PlaylistView from './ui/PlaylistView.svelte';
 import QueuePanel from './ui/QueuePanel.svelte';
 import ShortcutsDialog from './ui/ShortcutsDialog.svelte';
 import Sidebar from './ui/Sidebar.svelte';
@@ -31,7 +33,7 @@ let shortcutsOpen = $state(false);
 let dragging = $state(false);
 
 onMount(async () => {
-  await Promise.all([library.load(), memory.load()]);
+  await Promise.all([library.load(), memory.load(), playlists.load()]);
   player.restore();
   ready = true;
 });
@@ -150,6 +152,8 @@ $effect(() => {
           <DiscoverView />
         {:else if view.current === 'memories'}
           <MemoriesView />
+        {:else if view.current === 'playlist'}
+          <PlaylistView />
         {:else if library.tracks.length > 0}
           <LibraryView />
         {:else}

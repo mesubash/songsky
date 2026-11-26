@@ -3,7 +3,11 @@ import { view } from '$lib/view.svelte';
 </script>
 
 <nav class="tabs" aria-label="Views">
-  <a href="#library" aria-current={view.current === 'library' ? 'page' : undefined}>Library</a>
+  <a
+    href="#library"
+    aria-current={view.current === 'library' || view.current === 'playlist' ? 'page' : undefined}
+    >Library</a
+  >
   <a href="#discover" aria-current={view.current === 'discover' ? 'page' : undefined}>Discover</a>
   <a href="#memories" aria-current={view.current === 'memories' ? 'page' : undefined}>Memories</a>
 </nav>
