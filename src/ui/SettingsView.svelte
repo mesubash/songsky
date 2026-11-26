@@ -24,7 +24,7 @@ const SECTIONS = [
   { id: 'set-memories', label: 'Memories' },
   { id: 'set-storage', label: 'Storage' },
   { id: 'set-keys', label: 'Keyboard shortcuts' },
-  { id: 'set-danger', label: 'Delete data' },
+  { id: 'set-danger', label: 'Your data' },
   { id: 'set-about', label: 'About' },
 ];
 
@@ -422,7 +422,7 @@ function jumpTo(event: MouseEvent, id: string) {
     </section>
 
     <section aria-labelledby="set-danger">
-      <h3 id="set-danger">Delete data</h3>
+      <h3 id="set-danger">Your data</h3>
       <div class="rows danger">
         <div class="row">
           <div class="text">
