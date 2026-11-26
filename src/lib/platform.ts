@@ -40,3 +40,40 @@ export function installSteps(ua = navigator.userAgent): string[] | null {
     'or open the browser menu and choose Install Songsky.',
   ];
 }
+
+/**
+ * How to allow location again after blocking it, for this browser. Browsers never let a
+ * site ask a second time, so the person has to change it in the browser's own settings.
+ */
+export function locationSteps(ua = navigator.userAgent): string[] {
+  if (isIOS()) {
+    return [
+      'In Safari, tap the aA button at the left of the address bar, then Website Settings.',
+      'Set Location to Allow.',
+      'If Location isn’t there: open the Settings app, then Privacy & Security, Location Services, Safari Websites, and choose While Using the App.',
+    ];
+  }
+  if (/Android/i.test(ua)) {
+    return [
+      'Tap the icon at the left of the address bar.',
+      'Tap Permissions (or Site settings), then Location, and choose Allow.',
+    ];
+  }
+  if (/Firefox\//.test(ua)) {
+    return [
+      'Click the icon at the left of the address bar.',
+      'Next to “Access your location: Blocked”, click the × to clear it.',
+      'Then press Use my location below and choose Allow.',
+    ];
+  }
+  if (/Safari\//.test(ua) && !/Chrome|Chromium|Edg\//.test(ua)) {
+    return [
+      'In the menu bar, choose Safari, then Settings, then Websites.',
+      'Choose Location on the left, and set this site to Allow.',
+    ];
+  }
+  return [
+    'Click the icon at the left of the address bar (a lock or two sliders).',
+    'Turn Location on, or open Site settings and set Location to Allow.',
+  ];
+}

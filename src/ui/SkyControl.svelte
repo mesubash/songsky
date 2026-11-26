@@ -1,6 +1,7 @@
 <script lang="ts">
 import { EQ_PRESETS } from '$lib/audio/eq';
 import { sound } from '$lib/audio/sound.svelte';
+import { locationSteps } from '$lib/platform';
 import { player } from '$lib/player/player.svelte';
 import { sky } from '$lib/sky/sky.svelte';
 import { type Condition, type Place, searchPlaces, suggestedPreset } from '$lib/sky/weather';
@@ -132,7 +133,22 @@ function closeOnBackdrop(event: MouseEvent) {
       </div>
     </div>
 
-    {#if sky.error}
+    {#if sky.locationBlocked}
+      <!-- Browsers never let a site ask again once location is blocked, so this explains
+           how to allow it in this browser. Songsky notices by itself when it's allowed. -->
+      <div class="blocked" role="status">
+        <p class="blocked-title">Location is blocked for Songsky</p>
+        <p class="blocked-sub">Your browser won’t let Songsky ask again. To allow it:</p>
+        <ol>
+          {#each locationSteps() as step (step)}
+            <li>{step}</li>
+          {/each}
+        </ol>
+        <p class="blocked-sub">
+          Songsky picks it up as soon as you allow it. Or search for your city below.
+        </p>
+      </div>
+    {:else if sky.error}
       <p class="error">{sky.error}</p>
     {/if}
 
@@ -146,7 +162,11 @@ function closeOnBackdrop(event: MouseEvent) {
     {/if}
 
     <Button icon="pin" onclick={() => sky.useLocation()} disabled={sky.loading}>
-      {sky.source === 'location' ? 'Update my location' : 'Use my location'}
+      {sky.locationBlocked
+        ? 'I’ve allowed it, try again'
+        : sky.source === 'location'
+          ? 'Update my location'
+          : 'Use my location'}
     </Button>
 
     <form class="search" onsubmit={search}>
@@ -366,6 +386,32 @@ input::placeholder {
 .hint {
   color: var(--text-muted);
   font-size: var(--text-sm);
+}
+
+.blocked {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+}
+
+.blocked-title {
+  font-weight: 650;
+}
+
+.blocked-sub,
+.blocked ol {
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}
+
+.blocked ol {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0;
+  padding-left: var(--space-6);
 }
 
 .error {

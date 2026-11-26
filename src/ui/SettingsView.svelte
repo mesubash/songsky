@@ -443,7 +443,14 @@ const CREDITS: { name: string; what: string; url: string }[] = [
                 Time of day
               </button>
             </fieldset>
-            {#if sky.error}
+            {#if sky.locationBlocked}
+              <p class="desc warn">
+                Location is blocked for Songsky.
+                <button class="inline-link" type="button" onclick={() => (sky.panelOpen = true)}>
+                  See how to allow it
+                </button>
+              </p>
+            {:else if sky.error}
               <p class="desc warn">{sky.error}</p>
             {/if}
           </div>
@@ -1341,7 +1348,14 @@ output {
 }
 
 .inline-link {
+  padding: 0;
+  border: 0;
+  background: none;
   color: var(--text);
+  font: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
 }
 
 .empty {

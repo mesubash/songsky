@@ -183,7 +183,10 @@ $effect(() => {
     display: none;
   }
 
-  .actions :global(.button) {
+  /* Only the header's own buttons become round icons; panels opened from the header
+     (sky, Listen together) live inside it but keep their full-width buttons. */
+  .actions > :global(.button),
+  .add-buttons > :global(.button) {
     width: 44px;
     padding: 0;
   }

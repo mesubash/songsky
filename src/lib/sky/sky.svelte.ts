@@ -79,6 +79,8 @@ class SkyState {
   /** Whether the sky panel (location and city search) is open; other screens can open it. */
   panelOpen = $state(false);
   error = $state<string | null>(null);
+  /** Location was blocked for this site; the sky panel shows how to allow it again. */
+  locationBlocked = $state(false);
 
   #fetchedAt = 0;
   #askedForLocation = false;
@@ -149,6 +151,7 @@ class SkyState {
     this.error = null;
     try {
       this.place = await locate();
+      this.locationBlocked = false;
       this.source = 'location';
       await this.refresh(true);
     } catch (error) {
@@ -180,7 +183,8 @@ class SkyState {
       // Older browsers can't report the permission; fall back to the error code.
     }
     if (state === 'denied' || (state === 'unknown' && code === 1)) {
-      return 'Location is blocked for Songsky. To allow it, click the icon at the left of the address bar, turn on Location, and Songsky will pick it up. Or search for your city.';
+      this.locationBlocked = true;
+      return 'Location is blocked for Songsky.';
     }
     if (code === 2 || code === 3) {
       return 'Couldn’t find where you are. Check that location is turned on for your device, then try again, or search for your city.';
