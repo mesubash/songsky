@@ -13,7 +13,11 @@ import SeekBar from './SeekBar.svelte';
 import SongArtSheet from './SongArtSheet.svelte';
 import Visualizer from './Visualizer.svelte';
 
-let { open = $bindable(false), onsound }: { open?: boolean; onsound: () => void } = $props();
+let {
+  open = $bindable(false),
+  onsound,
+  onqueue,
+}: { open?: boolean; onsound: () => void; onqueue: () => void } = $props();
 
 const UP_NEXT = 5;
 
@@ -109,6 +113,14 @@ const upNext = $derived(
         {/if}
         <Button
           variant="icon"
+          icon="queue"
+          iconSize={22}
+          aria-label="Queue"
+          title="Queue (Q)"
+          onclick={onqueue}
+        />
+        <Button
+          variant="icon"
           icon="sliders"
           iconSize={22}
           aria-label="Sound settings"
@@ -162,7 +174,10 @@ const upNext = $derived(
           </div>
 
           <section class="up-next" aria-labelledby="up-next-title">
-            <h3 id="up-next-title">Up next</h3>
+            <div class="up-next-head">
+              <h3 id="up-next-title">Up next</h3>
+              <button class="see-queue" type="button" onclick={onqueue}>Edit queue</button>
+            </div>
             <ol>
               {#each upNext as { index, track: next } (next?.id)}
                 {#if next}
@@ -435,6 +450,22 @@ header {
   .up-next {
     display: grid;
     gap: var(--space-2);
+  }
+
+  .up-next-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+  }
+
+  .see-queue {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--text-muted);
+    font-size: var(--text-sm);
+    text-decoration: underline;
+    text-underline-offset: 3px;
   }
 
   .up-next h3 {

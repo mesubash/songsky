@@ -6,6 +6,7 @@ import { player } from '$lib/player/player.svelte';
 import Cover from './Cover.svelte';
 import HeartButton from './HeartButton.svelte';
 import Icon from './Icon.svelte';
+import TrackMenu from './TrackMenu.svelte';
 
 let {
   tracks,
@@ -57,25 +58,24 @@ const hasStreams = $derived(tracks.some((t) => t.source === 'stream'));
         </span>
         <span class="duration">{track.duration ? formatTime(track.duration) : ''}</span>
       </button>
-      {#if hasStreams}
-        <span class="actions">
-          {#if track.source === 'stream'}
-            <HeartButton {track} />
-            {#if track.link}
-              <a
-                class="action link"
-                href={track.link}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="Open {track.title} by {track.artist} on Audius"
-                title="Open on Audius"
-              >
-                <Icon name="external" size={16} />
-              </a>
-            {/if}
+      <span class="actions" class:streams={hasStreams}>
+        {#if track.source === 'stream'}
+          <HeartButton {track} />
+          {#if track.link}
+            <a
+              class="action link"
+              href={track.link}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Open {track.title} by {track.artist} on Audius"
+              title="Open on Audius"
+            >
+              <Icon name="external" size={16} />
+            </a>
           {/if}
-        </span>
-      {/if}
+        {/if}
+        <TrackMenu {track} />
+      </span>
     </li>
   {/each}
 </ol>
@@ -205,8 +205,12 @@ li.current {
 .actions {
   display: flex;
   flex: none;
-  width: 88px;
+  width: 44px;
   justify-content: flex-end;
+}
+
+.actions.streams {
+  width: 132px;
 }
 
 .action {
@@ -278,8 +282,8 @@ li.current {
 }
 
 @media (max-width: 720px) {
-  .actions {
-    width: 44px;
+  .actions.streams {
+    width: 88px;
   }
 
   .action.link {

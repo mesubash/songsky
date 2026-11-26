@@ -37,6 +37,12 @@ const ICONS = {
   },
   expand: { d: 'M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5', fill: false },
   shrink: { d: 'M9 4v5H4M20 9h-5V4M15 20v-5h5M4 15h5v5', fill: false },
+  queue: { d: 'M4 6h16M4 12h10M4 18h10M17 15v6l4-3z', fill: false },
+  more: { d: 'M5 12h.01M12 12h.01M19 12h.01', fill: false },
+  'arrow-up': { d: 'M12 19V5M6 11l6-6 6 6', fill: false },
+  'arrow-down': { d: 'M12 5v14M6 13l6 6 6-6', fill: false },
+  'play-next': { d: 'M4 6h12M4 12h8M4 18h8M15 14l6 4-6 4z', fill: false },
+  keyboard: { d: 'M3 6h18v12H3zM7 10h.01M11 10h.01M15 10h.01M7 14h10', fill: false },
   close: { d: 'M6 6l12 12M18 6 6 18', fill: false },
   sun: {
     d: 'M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8zM12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4',

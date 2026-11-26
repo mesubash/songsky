@@ -1,9 +1,11 @@
 <script lang="ts">
 import { onMount } from 'svelte';
+import { isOwnKeys, shortcutFor } from '$lib/keys/shortcuts';
 import { isAudioFile } from '$lib/library/files';
 import { library } from '$lib/library/library.svelte';
 import { memory } from '$lib/memory/memory.svelte';
 import { player } from '$lib/player/player.svelte';
+import { toast } from '$lib/toast.svelte';
 import { view } from '$lib/view.svelte';
 import DiscoverView from './ui/DiscoverView.svelte';
 import EmptyState from './ui/EmptyState.svelte';
@@ -12,6 +14,8 @@ import LibraryView from './ui/LibraryView.svelte';
 import MemoriesView from './ui/MemoriesView.svelte';
 import NowPlaying from './ui/NowPlaying.svelte';
 import PlayerBar from './ui/PlayerBar.svelte';
+import QueuePanel from './ui/QueuePanel.svelte';
+import ShortcutsDialog from './ui/ShortcutsDialog.svelte';
 import Sidebar from './ui/Sidebar.svelte';
 import SkyEffects from './ui/SkyEffects.svelte';
 import SoundPanel from './ui/SoundPanel.svelte';
@@ -22,6 +26,8 @@ import ViewTabs from './ui/ViewTabs.svelte';
 let ready = $state(false);
 let nowPlayingOpen = $state(false);
 let soundOpen = $state(false);
+let queueOpen = $state(false);
+let shortcutsOpen = $state(false);
 let dragging = $state(false);
 
 onMount(async () => {
@@ -30,17 +36,68 @@ onMount(async () => {
   ready = true;
 });
 
-function isTyping(target: EventTarget | null): boolean {
-  return (
-    target instanceof HTMLElement &&
-    (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT', 'BUTTON'].includes(target.tagName))
-  );
-}
+const SEEK_STEP = 5;
+const VOLUME_STEP = 0.1;
 
 function onkeydown(event: KeyboardEvent) {
-  if (event.code === 'Space' && !isTyping(event.target)) {
-    event.preventDefault();
-    void player.toggle();
+  if (isOwnKeys(event.target)) return;
+  const action = shortcutFor(event);
+  if (!action) return;
+  event.preventDefault();
+  const track = player.current;
+  switch (action) {
+    case 'toggle':
+      return void player.toggle();
+    case 'next':
+      return void player.next();
+    case 'prev':
+      return void player.prev();
+    case 'seek-forward':
+      return player.seek(player.position + SEEK_STEP);
+    case 'seek-back':
+      return player.seek(player.position - SEEK_STEP);
+    case 'volume-up':
+      return player.setVolume(player.volume + VOLUME_STEP);
+    case 'volume-down':
+      return player.setVolume(player.volume - VOLUME_STEP);
+    case 'mute':
+      return player.toggleMute();
+    case 'shuffle':
+      player.toggleShuffle();
+      return toast.show(player.shuffle ? 'Shuffle on' : 'Shuffle off');
+    case 'repeat':
+      player.cycleRepeat();
+      return toast.show(
+        { off: 'Repeat off', all: 'Repeat: all songs', one: 'Repeat: this song' }[player.repeat],
+      );
+    case 'like':
+      if (track?.source !== 'stream') return;
+      if (library.isSaved(track.id)) {
+        void library.remove(track.id);
+        return toast.show('Removed from your library.');
+      }
+      void library.save(track);
+      return toast.show('Saved to your library.');
+    case 'player':
+      if (track) nowPlayingOpen = !nowPlayingOpen;
+      return;
+    case 'queue':
+      queueOpen = !queueOpen;
+      return;
+    case 'search':
+      nowPlayingOpen = false;
+      location.hash = '#discover';
+      // The top-bar search on desktop, the in-page one on phones: whichever is showing.
+      requestAnimationFrame(() => {
+        const boxes = document.querySelectorAll<HTMLInputElement>(
+          '#header-search, #discover-search',
+        );
+        [...boxes].find((box) => box.offsetParent !== null)?.focus();
+      });
+      return;
+    case 'help':
+      shortcutsOpen = true;
+      return;
   }
 }
 
@@ -98,9 +155,19 @@ $effect(() => {
   </div>
 </div>
 
-<PlayerBar onexpand={() => (nowPlayingOpen = true)} onsound={() => (soundOpen = true)} />
-<NowPlaying bind:open={nowPlayingOpen} onsound={() => (soundOpen = true)} />
+<PlayerBar
+  onexpand={() => (nowPlayingOpen = true)}
+  onsound={() => (soundOpen = true)}
+  onqueue={() => (queueOpen = true)}
+/>
+<NowPlaying
+  bind:open={nowPlayingOpen}
+  onsound={() => (soundOpen = true)}
+  onqueue={() => (queueOpen = true)}
+/>
 <SoundPanel bind:open={soundOpen} />
+<QueuePanel bind:open={queueOpen} />
+<ShortcutsDialog bind:open={shortcutsOpen} />
 <StatusMessage />
 <UpdatePrompt />
 

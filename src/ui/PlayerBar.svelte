@@ -8,7 +8,11 @@ import HeartButton from './HeartButton.svelte';
 import SeekBar from './SeekBar.svelte';
 import VolumeControl from './VolumeControl.svelte';
 
-let { onexpand, onsound }: { onexpand: () => void; onsound: () => void } = $props();
+let {
+  onexpand,
+  onsound,
+  onqueue,
+}: { onexpand: () => void; onsound: () => void; onqueue: () => void } = $props();
 
 const progress = $derived(player.duration ? (player.position / player.duration) * 100 : 0);
 </script>
@@ -48,6 +52,14 @@ const progress = $derived(player.duration ? (player.position / player.duration) 
           onclick={onsound}
         />
       {/if}
+      <Button
+        variant="icon"
+        icon="queue"
+        iconSize={18}
+        aria-label="Queue"
+        title="Queue (Q)"
+        onclick={onqueue}
+      />
       <Button
         variant="icon"
         icon="sliders"

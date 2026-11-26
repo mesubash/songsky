@@ -6,11 +6,14 @@ import type { Track } from '$lib/library/types';
 import { memory } from '$lib/memory/memory.svelte';
 import { isIOS } from '$lib/platform';
 import {
+  addToEnd,
+  moveTo,
   moveToNext,
   nextIndex,
   prevIndex,
   REPEAT_ORDER,
   type RepeatMode,
+  removeAt,
   shuffledWithFirst,
 } from './queue';
 
@@ -209,6 +212,44 @@ class Player {
     if (this.queue[this.index + 1] === id) return;
     ({ queue: this.queue, index: this.index } = moveToNext(this.queue, this.index, id));
     void this.#prepareNext();
+  }
+
+  /** Adds a song to the end of the queue. With nothing queued, it starts playing. */
+  addToQueue(id: string): void {
+    if (this.index < 0 || !this.queue.length) {
+      void this.playList([id]);
+      return;
+    }
+    ({ queue: this.queue, index: this.index } = addToEnd(this.queue, this.index, id));
+    if (!this.#order.includes(id)) this.#order.push(id);
+    this.#queueChanged();
+  }
+
+  /** Removes the song at a queue position (not the playing one). */
+  removeFromQueue(at: number): void {
+    const id = this.queue[at];
+    ({ queue: this.queue, index: this.index } = removeAt(this.queue, this.index, at));
+    if (id !== undefined && !this.queue.includes(id))
+      this.#order = this.#order.filter((o) => o !== id);
+    this.#queueChanged();
+  }
+
+  moveInQueue(from: number, to: number): void {
+    ({ queue: this.queue, index: this.index } = moveTo(this.queue, this.index, from, to));
+    this.#queueChanged();
+  }
+
+  /** Empties Up next, keeping the playing song. */
+  clearUpcoming(): void {
+    const current = this.queue[this.index];
+    this.queue = this.queue.slice(0, this.index + 1);
+    this.#order = current === undefined ? [] : this.#order.filter((id) => this.queue.includes(id));
+    this.#queueChanged();
+  }
+
+  #queueChanged(): void {
+    void this.#prepareNext();
+    this.save();
   }
 
   toggleShuffle(): void {

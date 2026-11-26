@@ -51,3 +51,43 @@ export function moveToNext(
   if (current !== id) rest.splice(at + 1, 0, id);
   return { queue: rest, index: at };
 }
+
+/** Adds a song to the end of the queue (moving it there if it was already coming up). */
+export function addToEnd(
+  queue: readonly string[],
+  index: number,
+  id: string,
+): { queue: string[]; index: number } {
+  const current = queue[index];
+  if (current === id) return { queue: [...queue], index };
+  const rest = queue.filter((queued) => queued !== id);
+  return { queue: [...rest, id], index: current === undefined ? -1 : rest.indexOf(current) };
+}
+
+/** Removes the song at `at`. The playing song can't be removed this way. */
+export function removeAt(
+  queue: readonly string[],
+  index: number,
+  at: number,
+): { queue: string[]; index: number } {
+  if (at === index || at < 0 || at >= queue.length) return { queue: [...queue], index };
+  const next = queue.filter((_, i) => i !== at);
+  return { queue: next, index: at < index ? index - 1 : index };
+}
+
+/** Moves the song at `from` to position `to`, keeping track of the playing song. */
+export function moveTo(
+  queue: readonly string[],
+  index: number,
+  from: number,
+  to: number,
+): { queue: string[]; index: number } {
+  if (from === to || from < 0 || to < 0 || from >= queue.length || to >= queue.length) {
+    return { queue: [...queue], index };
+  }
+  const current = queue[index];
+  const next = [...queue];
+  const [moved] = next.splice(from, 1);
+  if (moved !== undefined) next.splice(to, 0, moved);
+  return { queue: next, index: current === undefined ? index : next.indexOf(current) };
+}

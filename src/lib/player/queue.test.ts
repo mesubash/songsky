@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { moveToNext, nextIndex, prevIndex, shuffledWithFirst } from './queue';
+import {
+  addToEnd,
+  moveTo,
+  moveToNext,
+  nextIndex,
+  prevIndex,
+  removeAt,
+  shuffledWithFirst,
+} from './queue';
 
 describe('shuffledWithFirst', () => {
   const ids = ['a', 'b', 'c', 'd', 'e'];
@@ -54,5 +62,28 @@ describe('moveToNext', () => {
 
   it('leaves the queue alone for the current song', () => {
     expect(moveToNext(['a', 'b'], 0, 'a')).toEqual({ queue: ['a', 'b'], index: 0 });
+  });
+});
+
+describe('queue editing', () => {
+  const q = ['a', 'b', 'c', 'd'];
+
+  it('adds to the end, or moves a coming-up song there', () => {
+    expect(addToEnd(q, 1, 'e')).toEqual({ queue: ['a', 'b', 'c', 'd', 'e'], index: 1 });
+    expect(addToEnd(q, 1, 'c')).toEqual({ queue: ['a', 'b', 'd', 'c'], index: 1 });
+    expect(addToEnd(q, 1, 'a')).toEqual({ queue: ['b', 'c', 'd', 'a'], index: 0 });
+    expect(addToEnd(q, 1, 'b')).toEqual({ queue: q, index: 1 });
+  });
+
+  it('removes songs but never the playing one', () => {
+    expect(removeAt(q, 1, 3)).toEqual({ queue: ['a', 'b', 'c'], index: 1 });
+    expect(removeAt(q, 1, 0)).toEqual({ queue: ['b', 'c', 'd'], index: 0 });
+    expect(removeAt(q, 1, 1)).toEqual({ queue: q, index: 1 });
+  });
+
+  it('moves songs and follows the playing one', () => {
+    expect(moveTo(q, 1, 3, 2)).toEqual({ queue: ['a', 'b', 'd', 'c'], index: 1 });
+    expect(moveTo(q, 1, 1, 3)).toEqual({ queue: ['a', 'c', 'd', 'b'], index: 3 });
+    expect(moveTo(q, 2, 0, 3)).toEqual({ queue: ['b', 'c', 'd', 'a'], index: 1 });
   });
 });

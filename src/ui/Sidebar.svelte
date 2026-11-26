@@ -95,6 +95,8 @@ function playRecent(id: string) {
       </ul>
     </section>
   {/if}
+
+  <p class="keys-hint">Press <kbd>?</kbd> for keyboard shortcuts</p>
 </aside>
 
 <style>
@@ -252,6 +254,20 @@ nav a[aria-current="page"] {
 .artist {
   color: var(--text-muted);
   font-size: var(--text-xs);
+}
+
+.keys-hint {
+  margin-top: auto;
+  padding-inline: var(--space-3);
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+}
+
+.keys-hint kbd {
+  padding: 0 5px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  font-family: var(--font-sans);
 }
 
 .recent button.current .title {
