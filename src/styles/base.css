@@ -35,7 +35,11 @@ body::before {
   inset: 0;
   z-index: -1;
   background:
-    radial-gradient(120% 60% at 50% 110%, var(--glow) 0%, transparent 55%),
+    radial-gradient(
+      120% 45% at 50% 118%,
+      color-mix(in srgb, var(--glow) 70%, transparent) 0%,
+      transparent 60%
+    ),
     linear-gradient(180deg, var(--sky-top) 0%, var(--sky-mid) 55%, var(--sky-horizon) 100%);
   filter: var(--sky-filter);
   transition:
