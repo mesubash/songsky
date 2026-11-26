@@ -9,7 +9,6 @@ import { view } from '$lib/view.svelte';
 import Button from './Button.svelte';
 import LibraryActions from './LibraryActions.svelte';
 import Logo from './Logo.svelte';
-import RememberSwitch from './RememberSwitch.svelte';
 import SearchBox from './SearchBox.svelte';
 import SkyControl from './SkyControl.svelte';
 import TogetherButton from './TogetherButton.svelte';
@@ -68,9 +67,7 @@ $effect(() => {
   <!-- Each page's own controls (desktop). Phones show them in the page instead. -->
   {#if view.current === 'discover'}
     <div class="header-search"><SearchBox id="header-search" /></div>
-  {:else if view.current === 'memories'}
-    <div class="page-controls"><RememberSwitch /></div>
-  {:else if library.tracks.length}
+  {:else if view.current === 'library' && library.tracks.length}
     <div class="page-controls"><LibraryActions /></div>
   {/if}
 

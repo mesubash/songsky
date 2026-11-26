@@ -8,7 +8,6 @@ import Button from './Button.svelte';
 import Icon, { type IconName } from './Icon.svelte';
 import { modal } from './modal';
 
-let open = $state(false);
 let query = $state('');
 let results = $state<Place[] | null>(null);
 let searching = $state(false);
@@ -73,7 +72,7 @@ async function choose(place: Place) {
 }
 
 function closeOnBackdrop(event: MouseEvent) {
-  if (event.target === event.currentTarget) open = false;
+  if (event.target === event.currentTarget) sky.panelOpen = false;
 }
 </script>
 
@@ -81,7 +80,7 @@ function closeOnBackdrop(event: MouseEvent) {
   class="chip"
   type="button"
   aria-label={sky.weather ? `Sky: ${summary}` : 'Match my sky'}
-  onclick={() => (open = true)}
+  onclick={() => (sky.panelOpen = true)}
 >
   <Icon name={icon} size={18} />
   <span class="summary">{summary}</span>
@@ -90,15 +89,20 @@ function closeOnBackdrop(event: MouseEvent) {
 <!-- biome-ignore lint/a11y/useKeyWithClickEvents: Escape already closes the native dialog; this only handles backdrop clicks. -->
 <dialog
   class="panel"
-  use:modal={open}
+  use:modal={sky.panelOpen}
   aria-labelledby="sky-title"
-  onclose={() => (open = false)}
+  onclose={() => (sky.panelOpen = false)}
   onclick={closeOnBackdrop}
 >
   <div class="content">
     <header>
       <h2 id="sky-title">Your sky</h2>
-      <Button variant="icon" icon="close" aria-label="Close" onclick={() => (open = false)} />
+      <Button
+        variant="icon"
+        icon="close"
+        aria-label="Close"
+        onclick={() => (sky.panelOpen = false)}
+      />
     </header>
 
     <p class="status" aria-live="polite">

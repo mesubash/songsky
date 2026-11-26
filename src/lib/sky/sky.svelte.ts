@@ -54,6 +54,8 @@ class SkyState {
   place = $state<Place | null>(null);
   weather = $state<Weather | null>(null);
   loading = $state(false);
+  /** Whether the sky panel (location and city search) is open; other screens can open it. */
+  panelOpen = $state(false);
   error = $state<string | null>(null);
 
   #fetchedAt = 0;

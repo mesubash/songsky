@@ -1,5 +1,6 @@
 import { addPlay, allPlays } from '$lib/library/db';
-import type { PlayRecord } from '$lib/library/types';
+import { library } from '$lib/library/library.svelte';
+import type { PlayRecord, Track } from '$lib/library/types';
 import { sky } from '$lib/sky/sky.svelte';
 import { groupByPlace } from './places';
 
@@ -22,6 +23,8 @@ class Memory {
 
   async load(): Promise<void> {
     this.plays = (await allPlays()).sort((a, b) => b.playedAt - a.playedAt);
+    // Make streamed songs from history playable again after a reload.
+    library.rememberStreams(this.plays.flatMap((play) => (play.stream ? [play.stream] : [])));
   }
 
   setRememberPlaces(on: boolean): void {
@@ -35,6 +38,8 @@ class Memory {
 
   async record(trackId: string): Promise<void> {
     const record: PlayRecord = { trackId, playedAt: Date.now() };
+    const track = library.byId.get(trackId);
+    if (track?.source === 'stream') record.stream = $state.snapshot(track) as Track;
     if (this.rememberPlaces && sky.place) {
       record.place = $state.snapshot(sky.place);
       if (sky.weather) record.weather = sky.weather.condition;

@@ -55,3 +55,34 @@ export function timeAgo(then: number, now = Date.now()): string {
     year: 'numeric',
   });
 }
+
+/** Plays grouped by calendar day, newest first: "Today", "Yesterday", then "Tue 24 Nov". */
+export function groupByDay<T extends { playedAt: number }>(
+  plays: readonly T[],
+  now = Date.now(),
+): { label: string; plays: T[] }[] {
+  const dayKey = (t: number) => new Date(t).toDateString();
+  const today = dayKey(now);
+  const yesterday = dayKey(now - 86_400_000);
+  const groups = new Map<string, { label: string; plays: T[] }>();
+  for (const play of [...plays].sort((a, b) => b.playedAt - a.playedAt)) {
+    const key = dayKey(play.playedAt);
+    let group = groups.get(key);
+    if (!group) {
+      const label =
+        key === today
+          ? 'Today'
+          : key === yesterday
+            ? 'Yesterday'
+            : new Date(play.playedAt).toLocaleDateString('en-GB', {
+                weekday: 'short',
+                day: 'numeric',
+                month: 'short',
+              });
+      group = { label, plays: [] };
+      groups.set(key, group);
+    }
+    group.plays.push(play);
+  }
+  return [...groups.values()];
+}

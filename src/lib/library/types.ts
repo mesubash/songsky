@@ -39,4 +39,6 @@ export interface PlayRecord {
   /** Only when "Remember where I listen" is on. Rounded to about 11 km. */
   place?: { name: string; latitude: number; longitude: number };
   weather?: string;
+  /** Streamed songs: a copy of the song's details, so history can show and replay it later. */
+  stream?: Track;
 }
