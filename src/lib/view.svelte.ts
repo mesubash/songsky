@@ -1,6 +1,11 @@
-export type View = 'library' | 'memories';
+export type View = 'library' | 'discover' | 'memories';
 
-const fromHash = (): View => (location.hash === '#memories' ? 'memories' : 'library');
+const fromHash = (): View =>
+  location.hash === '#memories'
+    ? 'memories'
+    : location.hash === '#discover'
+      ? 'discover'
+      : 'library';
 
 /** The current view, kept in the URL hash so links and the back button work. */
 class ViewState {
