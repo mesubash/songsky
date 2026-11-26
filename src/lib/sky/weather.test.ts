@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { describeCode, forecastUrl, roundCoordinate, suggestedPreset } from './weather';
+import {
+  describeCode,
+  forecastUrl,
+  formatCoordinates,
+  roundCoordinate,
+  suggestedPreset,
+} from './weather';
 
 describe('describeCode', () => {
   it.each([
@@ -29,6 +35,13 @@ describe('location privacy', () => {
     const url = new URL(forecastUrl({ latitude: 27.71724, longitude: 85.32396 }));
     expect(url.searchParams.get('latitude')).toBe('27.7');
     expect(url.searchParams.get('longitude')).toBe('85.3');
+  });
+});
+
+describe('formatCoordinates', () => {
+  it('names a place by its rounded coordinates', () => {
+    expect(formatCoordinates(27.71724, 85.32396)).toBe('27.7°N, 85.3°E');
+    expect(formatCoordinates(-33.87, -70.66)).toBe('33.9°S, 70.7°W');
   });
 });
 

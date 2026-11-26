@@ -1,9 +1,38 @@
 import { applySky, type Sky, skyForHour } from './time';
-import { fetchWeather, type Place, roundCoordinate, type Weather } from './weather';
+import {
+  fetchWeather,
+  formatCoordinates,
+  type Place,
+  roundCoordinate,
+  type Weather,
+} from './weather';
 
 const STORAGE_KEY = 'attune:sky';
 const REFRESH_MS = 30 * 60 * 1000;
 const TICK_MS = 5 * 60 * 1000;
+
+/** The device's position, rounded and named by its coordinates. */
+async function locate(): Promise<Place> {
+  const position = await new Promise<GeolocationPosition>((resolve, reject) =>
+    navigator.geolocation.getCurrentPosition(resolve, reject, {
+      enableHighAccuracy: false,
+      maximumAge: REFRESH_MS,
+      timeout: 15_000,
+    }),
+  );
+  const latitude = roundCoordinate(position.coords.latitude);
+  const longitude = roundCoordinate(position.coords.longitude);
+  return { name: formatCoordinates(latitude, longitude), latitude, longitude };
+}
+
+/** True only when location was already allowed, so asking won't show a prompt. */
+async function locationAllowed(): Promise<boolean> {
+  try {
+    return (await navigator.permissions.query({ name: 'geolocation' })).state === 'granted';
+  } catch {
+    return false;
+  }
+}
 
 /** Where the weather comes from. "time" means no weather: the sky follows the clock only. */
 export type SkySource = 'time' | 'location' | 'city';
@@ -46,19 +75,8 @@ class SkyState {
     this.loading = true;
     this.error = null;
     try {
-      const position = await new Promise<GeolocationPosition>((resolve, reject) =>
-        navigator.geolocation.getCurrentPosition(resolve, reject, {
-          enableHighAccuracy: false,
-          maximumAge: REFRESH_MS,
-          timeout: 15_000,
-        }),
-      );
+      this.place = await locate();
       this.source = 'location';
-      this.place = {
-        name: 'Your location',
-        latitude: roundCoordinate(position.coords.latitude),
-        longitude: roundCoordinate(position.coords.longitude),
-      };
       await this.refresh(true);
     } catch {
       this.loading = false;
@@ -92,7 +110,13 @@ class SkyState {
     if (!this.place || this.source === 'time') return;
     if (!force && Date.now() - this.#fetchedAt < REFRESH_MS) return;
     this.loading = true;
+    // Follow the person as they move, but only if location is already allowed.
+    if (!force && this.source === 'location' && (await locationAllowed())) {
+      const previous = this.place;
+      this.place = await locate().catch(() => previous);
+    }
     try {
+      if (!this.place) return;
       this.weather = await fetchWeather(this.place);
       this.#fetchedAt = Date.now();
       this.error = null;

@@ -45,6 +45,13 @@ export function roundCoordinate(value: number): number {
   return Math.round(value * 10) / 10;
 }
 
+/** "27.7°N, 85.3°E": a name for places found by location, which have no city name. */
+export function formatCoordinates(latitude: number, longitude: number): string {
+  const lat = `${Math.abs(roundCoordinate(latitude))}°${latitude < 0 ? 'S' : 'N'}`;
+  const lon = `${Math.abs(roundCoordinate(longitude))}°${longitude < 0 ? 'W' : 'E'}`;
+  return `${lat}, ${lon}`;
+}
+
 export function forecastUrl(place: Pick<Place, 'latitude' | 'longitude'>): string {
   const params = new URLSearchParams({
     latitude: String(roundCoordinate(place.latitude)),
