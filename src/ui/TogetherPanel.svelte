@@ -1,7 +1,7 @@
 <script lang="ts">
 import { library } from '$lib/library/library.svelte';
 import { toast } from '$lib/toast.svelte';
-import { MAX_CHAT_LENGTH, MAX_NAME_LENGTH } from '$lib/together/sync';
+import { MAX_CHAT_LENGTH, MAX_NAME_LENGTH, searchCatalog } from '$lib/together/sync';
 import { together } from '$lib/together/together.svelte';
 import Button from './Button.svelte';
 import { modal } from './modal';
@@ -9,6 +9,8 @@ import { modal } from './modal';
 let { open = $bindable(false) }: { open?: boolean } = $props();
 
 let draft = $state('');
+let query = $state('');
+const results = $derived(searchCatalog(together.catalog, query));
 let busy = $state(false);
 let chatList = $state<HTMLOListElement>();
 
@@ -144,6 +146,69 @@ function closeOnBackdrop(event: MouseEvent) {
         {/if}
       {/if}
 
+      <section class="requests" aria-labelledby="requests-title">
+        <h3 id="requests-title">Requests</h3>
+        {#if together.role === 'guest'}
+          <input
+            type="search"
+            bind:value={query}
+            placeholder="Find a song to request"
+            aria-label="Find a song to request"
+          >
+          {#if results.length}
+            <ul class="results">
+              {#each results as song (song.key)}
+                <li>
+                  <button
+                    type="button"
+                    onclick={() => {
+                      void together.requestSong(song);
+                      query = '';
+                      toast.show(`Requested “${song.title}”.`);
+                    }}
+                  >
+                    <span>{song.title}</span>
+                    <span class="muted">{song.artist}</span>
+                  </button>
+                </li>
+              {/each}
+            </ul>
+          {:else if query.trim()}
+            <p class="muted">No songs match.</p>
+          {/if}
+        {/if}
+
+        {#if together.requests.length}
+          <ol class="queue">
+            {#each together.requests as request, i (request.key)}
+              <li>
+                <span class="song">
+                  <span>{request.title}</span>
+                  <span class="muted">{i === 0 ? 'Plays next' : request.artist}</span>
+                </span>
+                <button
+                  class="vote"
+                  type="button"
+                  aria-label="Vote for {request.title}, {request.votes.length} {request.votes
+                    .length === 1
+                    ? 'vote'
+                    : 'votes'}"
+                  onclick={() => together.requestSong(request)}
+                >
+                  +{request.votes.length}
+                </button>
+              </li>
+            {/each}
+          </ol>
+        {:else}
+          <p class="muted">
+            {together.role === 'host'
+              ? 'Listeners can request songs from your library. The most wanted one plays next.'
+              : 'Request a song and vote for others. The most wanted one plays next.'}
+          </p>
+        {/if}
+      </section>
+
       <ol class="chat" bind:this={chatList} aria-label="Chat" aria-live="polite">
         {#each together.messages as message (message.at + message.name)}
           <li><strong>{message.name}</strong> {message.text}</li>
@@ -264,7 +329,7 @@ progress {
   display: grid;
   align-content: start;
   gap: var(--space-2);
-  height: 12rem;
+  height: 9rem;
   margin: 0;
   padding: var(--space-3);
   overflow-y: auto;
@@ -272,6 +337,73 @@ progress {
   background: var(--surface);
   list-style: none;
   overflow-wrap: anywhere;
+}
+
+.requests {
+  display: grid;
+  gap: var(--space-2);
+}
+
+h3 {
+  font-size: var(--text-base);
+}
+
+.results,
+.queue {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  max-height: 12rem;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.results button {
+  display: grid;
+  width: 100%;
+  min-height: 44px;
+  padding: var(--space-2) var(--space-3);
+  border: 0;
+  border-radius: var(--radius-md);
+  background: none;
+  text-align: start;
+}
+
+.results button:hover {
+  background: var(--surface);
+}
+
+.queue li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.song {
+  display: grid;
+  min-width: 0;
+}
+
+.song span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.vote {
+  flex: none;
+  min-width: 44px;
+  min-height: 36px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-full);
+  background: none;
+  font-variant-numeric: tabular-nums;
+}
+
+.vote:hover {
+  background: var(--surface);
 }
 
 .link-button {
