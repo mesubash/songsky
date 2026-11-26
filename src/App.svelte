@@ -53,6 +53,13 @@ function ondrop(event: DragEvent) {
   const files = [...(event.dataTransfer?.files ?? [])].filter((f) => isAudioFile(f.name));
   if (files.length) void library.addFiles(files);
 }
+
+// While a song plays, the browser tab shows it, like other music players do.
+const pageTitle = document.title;
+$effect(() => {
+  const track = player.current;
+  document.title = track && player.playing ? `▶ ${track.title} – ${track.artist}` : pageTitle;
+});
 </script>
 
 <svelte:window
