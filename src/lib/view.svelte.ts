@@ -1,15 +1,17 @@
-export type View = 'library' | 'discover' | 'memories' | 'playlist';
+export type View = 'library' | 'discover' | 'memories' | 'playlist' | 'settings';
 
 const PLAYLIST_PREFIX = '#playlist/';
 
 const fromHash = (): View =>
   location.hash === '#memories'
     ? 'memories'
-    : location.hash === '#discover'
-      ? 'discover'
-      : location.hash.startsWith(PLAYLIST_PREFIX)
-        ? 'playlist'
-        : 'library';
+    : location.hash === '#settings'
+      ? 'settings'
+      : location.hash === '#discover'
+        ? 'discover'
+        : location.hash.startsWith(PLAYLIST_PREFIX)
+          ? 'playlist'
+          : 'library';
 
 const playlistFromHash = (): string | null =>
   location.hash.startsWith(PLAYLIST_PREFIX)

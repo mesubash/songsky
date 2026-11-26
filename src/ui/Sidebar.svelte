@@ -18,6 +18,7 @@ const NAV: { view: View; label: string; icon: IconName; href: string }[] = [
   { view: 'library', label: 'Library', icon: 'music', href: '#library' },
   { view: 'discover', label: 'Discover', icon: 'disc', href: '#discover' },
   { view: 'memories', label: 'Memories', icon: 'pin', href: '#memories' },
+  { view: 'settings', label: 'Settings', icon: 'settings', href: '#settings' },
 ];
 
 /** The last few different songs played, newest first. */
@@ -134,8 +135,6 @@ function playRecent(id: string) {
       </ul>
     </section>
   {/if}
-
-  <p class="keys-hint">Press <kbd>?</kbd> for keyboard shortcuts</p>
 </aside>
 
 <style>
@@ -352,21 +351,6 @@ nav a[aria-current="page"] {
 .artist {
   color: var(--text-muted);
   font-size: var(--text-xs);
-}
-
-.keys-hint {
-  flex: none;
-  margin-top: auto;
-  padding-inline: var(--space-3);
-  color: var(--text-muted);
-  font-size: var(--text-xs);
-}
-
-.keys-hint kbd {
-  padding: 0 5px;
-  border: 1px solid var(--line);
-  border-radius: 4px;
-  font-family: var(--font-sans);
 }
 
 .recent button.current .title {

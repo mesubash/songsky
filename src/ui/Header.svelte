@@ -7,6 +7,7 @@ import { player } from '$lib/player/player.svelte';
 import { together } from '$lib/together/together.svelte';
 import { view } from '$lib/view.svelte';
 import Button from './Button.svelte';
+import Icon from './Icon.svelte';
 import Logo from './Logo.svelte';
 import SearchBox from './SearchBox.svelte';
 import SkyControl from './SkyControl.svelte';
@@ -18,6 +19,9 @@ const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
 const page = $derived.by((): { title: string; subtitle: string } | null => {
   if (view.current === 'discover') {
     return { title: 'Discover', subtitle: 'Free music from independent artists on Audius' };
+  }
+  if (view.current === 'settings') {
+    return { title: 'Settings', subtitle: 'Changes save as you make them' };
   }
   if (view.current === 'memories') {
     const places = memory.places.length;
@@ -71,6 +75,10 @@ $effect(() => {
   {/if}
 
   <div class="actions">
+    <!-- Phones have no sidebar, so Settings lives here. -->
+    <a class="settings-link" href="#settings" aria-label="Settings" title="Settings">
+      <Icon name="settings" size={20} />
+    </a>
     <SkyControl />
     {#if library.tracks.length > 0 || player.current || together.invite}
       <TogetherButton />
@@ -116,6 +124,22 @@ $effect(() => {
     0 8px 24px -16px rgb(0 0 0 / 0.35);
   backdrop-filter: blur(20px) saturate(1.4);
   -webkit-backdrop-filter: blur(20px) saturate(1.4);
+}
+
+.settings-link {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--text);
+}
+
+@media (min-width: 1100px) {
+  .settings-link {
+    display: none;
+  }
 }
 
 .page,

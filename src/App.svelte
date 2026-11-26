@@ -17,6 +17,7 @@ import NowPlaying from './ui/NowPlaying.svelte';
 import PlayerBar from './ui/PlayerBar.svelte';
 import PlaylistView from './ui/PlaylistView.svelte';
 import QueuePanel from './ui/QueuePanel.svelte';
+import SettingsView from './ui/SettingsView.svelte';
 import ShortcutsDialog from './ui/ShortcutsDialog.svelte';
 import Sidebar from './ui/Sidebar.svelte';
 import SkyEffects from './ui/SkyEffects.svelte';
@@ -154,6 +155,8 @@ $effect(() => {
           <MemoriesView />
         {:else if view.current === 'playlist'}
           <PlaylistView />
+        {:else if view.current === 'settings'}
+          <SettingsView />
         {:else if library.tracks.length > 0}
           <LibraryView />
         {:else}

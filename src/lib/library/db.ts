@@ -51,3 +51,7 @@ export async function putPlaylist(playlist: Playlist): Promise<void> {
 export async function deletePlaylist(id: string): Promise<void> {
   await (await db()).delete('playlists', id);
 }
+
+export async function clearPlays(): Promise<void> {
+  await (await db()).clear('history');
+}

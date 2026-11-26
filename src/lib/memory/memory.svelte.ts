@@ -1,4 +1,4 @@
-import { addPlay, allPlays } from '$lib/library/db';
+import { addPlay, allPlays, clearPlays } from '$lib/library/db';
 import { library } from '$lib/library/library.svelte';
 import type { PlayRecord, Track } from '$lib/library/types';
 import { sky } from '$lib/sky/sky.svelte';
@@ -46,6 +46,12 @@ class Memory {
     }
     this.plays = [record, ...this.plays];
     await addPlay(record);
+  }
+
+  /** Deletes listening history and places, keeping the songs. */
+  async clearHistory(): Promise<void> {
+    this.plays = [];
+    await clearPlays();
   }
 
   /** Called when the library is cleared, since that also clears history. */
