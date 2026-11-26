@@ -3,7 +3,6 @@ import { discover } from '$lib/discover/discover.svelte';
 import { library } from '$lib/library/library.svelte';
 import { player } from '$lib/player/player.svelte';
 import { prefs } from '$lib/prefs.svelte';
-import { sky } from '$lib/sky/sky.svelte';
 import Button from './Button.svelte';
 import Cover from './Cover.svelte';
 import Icon from './Icon.svelte';
@@ -20,11 +19,6 @@ $effect(() => {
 
 const picks = $derived(discover.forSky.slice(0, PICKS));
 const ids = $derived(discover.forSky.map((t) => t.id));
-const skyNow = $derived(
-  sky.weather
-    ? `${sky.weather.label}, ${sky.weather.temperature}° right now`
-    : 'Following the time of day',
-);
 
 function playFrom(index: number) {
   if (!ids.length) return;
@@ -35,31 +29,19 @@ function playFrom(index: number) {
 
 <section class="home" aria-labelledby="empty-title">
   <div class="intro">
-    <p class="now">{skyNow}</p>
     <h2 id="empty-title" class="headline">Music that follows your sky.</h2>
-    <!-- Phones get a one-line version; computers have room for the full sentence. -->
-    <p class="lead short">
-      {prefs.onlineMusic
-        ? 'Free songs picked for your sky, or your own music.'
-        : 'Play the songs on this device.'}
-    </p>
-    <p class="lead long">
-      {#if !prefs.onlineMusic}
-        Bring your own music: Songsky plays the songs on this device, and they stay here.
-      {:else if !prefs.localMusic}
-        Free songs from independent artists, picked to feel
-        {discover.mood.moods.join(', ').toLowerCase()}.
-      {:else}
-        Free songs from independent artists, picked to feel
-        {discover.mood.moods.join(', ').toLowerCase()}. Or bring your own music: it stays on this
-        device.
-      {/if}
+    <!-- One short line on where the music comes from; the songs below do the rest. -->
+    <p class="lead">
+      {prefs.onlineMusic && prefs.localMusic
+        ? 'Free songs from independent artists, or your own music.'
+        : prefs.onlineMusic
+          ? 'Free songs from independent artists.'
+          : 'Plays the songs on this device. They stay here.'}
     </p>
     <div class="actions">
       {#if discover.hasSongs}
         <Button variant="primary" icon="play" disabled={!picks.length} onclick={() => playFrom(0)}>
-          <span class="long-label">Play songs for your sky</span
-          ><span class="short-label">Play for your sky</span>
+          Play for your sky
         </Button>
       {/if}
       {#if prefs.localMusic}
@@ -143,11 +125,6 @@ function playFrom(index: number) {
   display: grid;
   gap: var(--space-4);
   max-width: 42rem;
-}
-
-.now {
-  color: var(--text-muted);
-  font-weight: 550;
 }
 
 .headline {
@@ -408,7 +385,6 @@ h3 {
 }
 /* Phones: a smaller headline, one line of intro, buttons side by side, and no drop hint
    (files can't be dragged onto a phone). */
-.short,
 .short-label {
   display: none;
 }
@@ -427,14 +403,8 @@ h3 {
     font-size: var(--text-2xl);
   }
 
-  .long,
   .long-label {
     display: none;
-  }
-
-  .short {
-    display: block;
-    font-size: var(--text-base);
   }
 
   .short-label {

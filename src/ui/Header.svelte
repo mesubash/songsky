@@ -88,7 +88,8 @@ $effect(() => {
     {#if library.visibleTracks.length > 0 || player.current || together.invite}
       <TogetherButton />
     {/if}
-    {#if prefs.localMusic}
+    <!-- The empty Library has its own add buttons, so the header doesn't repeat them. -->
+    {#if prefs.localMusic && !(view.current === 'library' && !library.visibleTracks.length)}
       <span class="add-buttons">
         {#if library.canPickFolder}
           <Button icon="folder" aria-label="Add folder" onclick={() => library.addFolder()}>
