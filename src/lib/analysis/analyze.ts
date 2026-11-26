@@ -12,6 +12,23 @@ export interface Analysis {
   camelot?: string;
 }
 
+/** The beat detector assumes 44.1 kHz audio, so the analysed slice is upsampled for it. */
+const BEAT_RATE = 44100;
+
+async function toBeatRate(
+  mono: Float32Array<ArrayBuffer>,
+  sampleRate: number,
+): Promise<AudioBuffer> {
+  const source = new AudioBuffer({ length: mono.length, numberOfChannels: 1, sampleRate });
+  source.copyToChannel(mono, 0);
+  const length = Math.ceil((mono.length / sampleRate) * BEAT_RATE);
+  const context = new OfflineAudioContext(1, length, BEAT_RATE);
+  const node = new AudioBufferSourceNode(context, { buffer: source });
+  node.connect(context.destination);
+  node.start();
+  return context.startRendering();
+}
+
 export async function analyzeFile(file: Blob): Promise<Analysis> {
   const bytes = await file.arrayBuffer();
   // Decoding through a low-rate context resamples for us.
@@ -32,7 +49,10 @@ export async function analyzeFile(file: Blob): Promise<Analysis> {
 
   const result: Analysis = {};
   try {
-    const { bpm } = await guess(decoded, offset, seconds, { minTempo: 70, maxTempo: 180 });
+    const { bpm } = await guess(await toBeatRate(mono, decoded.sampleRate), {
+      minTempo: 70,
+      maxTempo: 180,
+    });
     if (Number.isFinite(bpm) && bpm > 0) result.bpm = Math.round(bpm);
   } catch {
     // No steady beat (ambient, spoken word): leave tempo unknown.
