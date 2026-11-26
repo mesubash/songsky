@@ -94,7 +94,7 @@ const progress = $derived(player.duration ? (player.position / player.duration) 
 <style>
 .bar {
   position: fixed;
-  inset: auto 0 0;
+  inset: auto 0 var(--tabbar);
   z-index: 10;
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) minmax(0, 1fr);
@@ -183,7 +183,6 @@ const progress = $derived(player.duration ? (player.position / player.duration) 
     grid-template-columns: minmax(0, 1fr) auto;
     gap: var(--space-2);
     padding: var(--space-2) var(--space-3);
-    padding-bottom: max(var(--space-2), env(safe-area-inset-bottom));
   }
 
   .center,

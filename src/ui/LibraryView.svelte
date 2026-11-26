@@ -125,6 +125,12 @@ async function clearLibrary() {
     </div>
     <div class="actions">
       <LibraryActions tracks={grouped} />
+      {#if prefs.localMusic}
+        <!-- Phones: the header has no add button, so it lives here. -->
+        <span class="phone-add">
+          <Button icon="plus" aria-label="Add songs" onclick={() => library.addFiles()}>Add</Button>
+        </span>
+      {/if}
       <div class="find">
         <search class="filter">
           <label class="visually-hidden" for="library-filter">Search your library</label>
@@ -523,5 +529,14 @@ async function clearLibrary() {
   width: 1rem;
   color: var(--accent);
   font-weight: 700;
+}
+.phone-add {
+  display: none;
+}
+
+@media (max-width: 720px) {
+  .phone-add {
+    display: contents;
+  }
 }
 </style>

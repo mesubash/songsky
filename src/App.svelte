@@ -211,8 +211,13 @@ $effect(() => {
   padding-bottom: var(--space-12);
 }
 
+/* Phones and tablets: room for the tab bar, and the player bar above it. */
+.app {
+  padding-bottom: calc(var(--space-12) + var(--tabbar));
+}
+
 .has-player {
-  padding-bottom: calc(120px + env(safe-area-inset-bottom));
+  padding-bottom: calc(84px + var(--tabbar));
 }
 
 /* Desktop: sidebar on the left, content using the rest of the width. */

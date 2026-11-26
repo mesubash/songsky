@@ -14,6 +14,8 @@ import { playlists } from '$lib/playlists/playlists.svelte';
 import { prefs } from '$lib/prefs.svelte';
 import { pwa } from '$lib/pwa.svelte';
 import { sky } from '$lib/sky/sky.svelte';
+import type { Sky } from '$lib/sky/time';
+import type { Condition } from '$lib/sky/weather';
 import { toast } from '$lib/toast.svelte';
 import { playlistHref, view } from '$lib/view.svelte';
 import Button from './Button.svelte';
@@ -94,6 +96,9 @@ const SECTIONS: { id: string; label: string; icon: IconName; tint: string; hint:
   },
 ];
 
+/** Touch screens have no keyboard shortcuts to show. */
+const touchOnly = matchMedia('(pointer: coarse)').matches;
+
 const wide = matchMedia('(min-width: 1100px)');
 let isWide = $state(wide.matches);
 $effect(() => {
@@ -145,6 +150,22 @@ async function removeFolder(folder: string) {
   await library.removeFolder(folder);
   toast.show(`Removed ${folder}.`);
 }
+
+const PREVIEW_WEATHER: { id: Condition; label: string }[] = [
+  { id: 'clear', label: 'Clear' },
+  { id: 'cloudy', label: 'Cloudy' },
+  { id: 'rain', label: 'Rain' },
+  { id: 'storm', label: 'Storm' },
+  { id: 'snow', label: 'Snow' },
+  { id: 'fog', label: 'Fog' },
+];
+
+const PREVIEW_TIMES: { id: Sky; label: string }[] = [
+  { id: 'dawn', label: 'Dawn' },
+  { id: 'day', label: 'Day' },
+  { id: 'dusk', label: 'Dusk' },
+  { id: 'night', label: 'Night' },
+];
 
 const presets = Object.entries(EQ_PRESETS) as [EqPresetId, (typeof EQ_PRESETS)[EqPresetId]][];
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
@@ -361,7 +382,7 @@ const CREDITS: { name: string; what: string; url: string }[] = [
 
   <nav class="list" aria-label="Settings sections">
     <ul>
-      {#each SECTIONS as section (section.id)}
+      {#each SECTIONS.filter((x) => x.id !== 'keys' || !touchOnly) as section (section.id)}
         <li>
           <a
             href="#settings/{section.id}"
@@ -424,6 +445,44 @@ const CREDITS: { name: string; what: string; url: string }[] = [
             </fieldset>
             {#if sky.error}
               <p class="desc warn">{sky.error}</p>
+            {/if}
+          </div>
+          <div class="row stack">
+            <div class="text">
+              <p class="name">Preview a sky</p>
+              <p class="desc">
+                See how Songsky looks in other weather or at another time of day. Nothing is saved;
+                your real sky comes back when you’re done.
+              </p>
+            </div>
+            <fieldset class="segmented">
+              <legend class="visually-hidden">Preview weather</legend>
+              {#each PREVIEW_WEATHER as option (option.id)}
+                <button
+                  type="button"
+                  aria-pressed={sky.previewing && sky.weather?.condition === option.id}
+                  onclick={() => sky.preview({ condition: option.id })}
+                >
+                  {option.label}
+                </button>
+              {/each}
+            </fieldset>
+            <fieldset class="segmented">
+              <legend class="visually-hidden">Preview time of day</legend>
+              {#each PREVIEW_TIMES as option (option.id)}
+                <button
+                  type="button"
+                  aria-pressed={sky.previewing && sky.time === option.id}
+                  onclick={() => sky.preview({ time: option.id })}
+                >
+                  {option.label}
+                </button>
+              {/each}
+            </fieldset>
+            {#if sky.previewing}
+              <div>
+                <Button variant="primary" onclick={() => sky.endPreview()}>Back to my sky</Button>
+              </div>
             {/if}
           </div>
           <div class="row">

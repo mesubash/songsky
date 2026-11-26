@@ -286,4 +286,16 @@ h3 {
     padding-block: 0;
   }
 }
+/* Phones: the search box takes the full width under the title. */
+@media (max-width: 720px) {
+  .page-search {
+    flex: 1 1 100%;
+  }
+
+  .page-search :global(.search),
+  .page-search :global(form) {
+    width: 100%;
+    max-width: none;
+  }
+}
 </style>

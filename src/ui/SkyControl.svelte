@@ -86,6 +86,9 @@ function closeOnBackdrop(event: MouseEvent) {
 >
   <Icon name={icon} size={18} />
   <span class="summary">{summary}</span>
+  <!-- Phones: the temperature (or the time of day) next to the icon, so it reads as the
+       sky, not a light/dark switch. -->
+  <span class="temp">{sky.weather ? `${sky.weather.temperature}°` : TIME_LABELS[sky.time]}</span>
 </button>
 
 <!-- biome-ignore lint/a11y/useKeyWithClickEvents: Escape already closes the native dialog; this only handles backdrop clicks. -->
@@ -196,6 +199,10 @@ function closeOnBackdrop(event: MouseEvent) {
 </dialog>
 
 <style>
+.temp {
+  display: none;
+}
+
 .chip {
   display: inline-flex;
   align-items: center;
@@ -376,9 +383,15 @@ input::placeholder {
   }
 
   .chip {
-    width: 44px;
-    padding: 0;
+    min-width: 44px;
+    padding: 0 var(--space-3);
     justify-content: center;
+  }
+
+  .temp {
+    display: inline;
+    font-weight: 650;
+    font-variant-numeric: tabular-nums;
   }
 }
 </style>

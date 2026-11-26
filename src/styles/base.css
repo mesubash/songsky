@@ -214,3 +214,15 @@ button {
     opacity: 1;
   }
 }
+
+/* Height of the bottom tab bar on phones and tablets (0 on desktop, where the sidebar is).
+   The player bar, radio bar and messages sit above it. */
+:root {
+  --tabbar: 0px;
+}
+
+@media (max-width: 1099px) {
+  :root {
+    --tabbar: calc(60px + env(safe-area-inset-bottom));
+  }
+}

@@ -30,7 +30,7 @@ $effect(() => {
 <style>
 .status {
   position: fixed;
-  inset: auto 0 calc(96px + env(safe-area-inset-bottom));
+  inset: auto 0 calc(96px + var(--tabbar));
   z-index: 20;
   display: flex;
   justify-content: center;
@@ -56,7 +56,7 @@ $effect(() => {
 
 @media (max-width: 720px) {
   .status {
-    bottom: calc(76px + env(safe-area-inset-bottom));
+    bottom: calc(76px + var(--tabbar));
   }
 }
 </style>

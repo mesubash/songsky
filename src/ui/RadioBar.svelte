@@ -67,7 +67,7 @@ import Icon from './Icon.svelte';
 <style>
 .bar {
   position: fixed;
-  inset: auto 0 0;
+  inset: auto 0 var(--tabbar);
   z-index: 10;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
@@ -183,6 +183,7 @@ import Icon from './Icon.svelte';
   .bar {
     grid-template-columns: minmax(0, 1fr) auto auto;
     gap: var(--space-3);
+    padding-block: var(--space-2);
   }
 
   .site,

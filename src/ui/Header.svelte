@@ -6,10 +6,10 @@ import { library } from '$lib/library/library.svelte';
 import { memory } from '$lib/memory/memory.svelte';
 import { player } from '$lib/player/player.svelte';
 import { prefs } from '$lib/prefs.svelte';
+import { sky } from '$lib/sky/sky.svelte';
 import { together } from '$lib/together/together.svelte';
 import { view } from '$lib/view.svelte';
 import Button from './Button.svelte';
-import Icon from './Icon.svelte';
 import Logo from './Logo.svelte';
 import SearchBox from './SearchBox.svelte';
 import SkyControl from './SkyControl.svelte';
@@ -77,23 +77,26 @@ $effect(() => {
   {/if}
 
   <div class="actions">
-    <!-- Phones have no sidebar, so Settings lives here. -->
-    <a class="settings-link" href="#settings" aria-label="Settings" title="Settings">
-      <Icon name="settings" size={20} />
-    </a>
+    {#if sky.previewing}
+      <Button variant="primary" onclick={() => sky.endPreview()}>
+        <span class="wide-only">Previewing a sky.</span> Back to my sky
+      </Button>
+    {/if}
     <SkyControl />
     {#if library.visibleTracks.length > 0 || player.current || together.invite}
       <TogetherButton />
     {/if}
     {#if prefs.localMusic}
-      {#if library.canPickFolder}
-        <Button icon="folder" aria-label="Add folder" onclick={() => library.addFolder()}>
-          <span class="wide-only">Add folder</span>
+      <span class="add-buttons">
+        {#if library.canPickFolder}
+          <Button icon="folder" aria-label="Add folder" onclick={() => library.addFolder()}>
+            <span class="wide-only">Add folder</span>
+          </Button>
+        {/if}
+        <Button icon="plus" aria-label="Add songs" onclick={() => library.addFiles()}>
+          <span class="wide-only">Add songs</span>
         </Button>
-      {/if}
-      <Button icon="plus" aria-label="Add songs" onclick={() => library.addFiles()}>
-        <span class="wide-only">Add songs</span>
-      </Button>
+      </span>
     {/if}
   </div>
 </header>
@@ -126,22 +129,6 @@ $effect(() => {
     0 8px 24px -16px rgb(0 0 0 / 0.35);
   backdrop-filter: blur(20px) saturate(1.4);
   -webkit-backdrop-filter: blur(20px) saturate(1.4);
-}
-
-.settings-link {
-  display: grid;
-  place-items: center;
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  background: var(--surface);
-  color: var(--text);
-}
-
-@media (min-width: 1100px) {
-  .settings-link {
-    display: none;
-  }
 }
 
 .page,
@@ -224,6 +211,16 @@ $effect(() => {
 
   .header-search {
     display: block;
+  }
+}
+.add-buttons {
+  display: contents;
+}
+
+/* Phones add songs from the Library page instead, keeping the header calm. */
+@media (max-width: 720px) {
+  .add-buttons {
+    display: none;
   }
 }
 </style>

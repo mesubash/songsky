@@ -1,6 +1,7 @@
 import { updateTabIcon } from './tab-icon';
 import { applySky, type Sky, skyForHour } from './time';
 import {
+  type Condition,
   fetchWeather,
   formatCoordinates,
   type Place,
@@ -10,6 +11,15 @@ import {
 } from './weather';
 
 const STORAGE_KEY = 'songsky:sky';
+
+const PREVIEW_LABELS: Record<Condition, string> = {
+  clear: 'Clear',
+  cloudy: 'Cloudy',
+  fog: 'Fog',
+  rain: 'Rain',
+  snow: 'Snow',
+  storm: 'Thunderstorm',
+};
 const REFRESH_MS = 30 * 60 * 1000;
 const TICK_MS = 5 * 60 * 1000;
 
@@ -90,14 +100,47 @@ class SkyState {
       void this.refresh();
     }
     setInterval(() => {
+      if (this.previewing) return;
       this.time = skyForHour(new Date().getHours());
       this.#apply();
       void this.refresh();
     }, TICK_MS);
   }
 
+  /** A sky being tried out in Settings; the real one comes back with endPreview(). */
+  previewing = $state(false);
+  #real: { time: Sky; weather: Weather | null } | null = null;
+
+  /** Shows the app under another sky (weather and/or time of day) without saving it. */
+  preview({ condition, time }: { condition?: Condition | null; time?: Sky }): void {
+    if (!this.#real) this.#real = { time: this.time, weather: this.weather };
+    this.previewing = true;
+    if (time) this.time = time;
+    if (condition !== undefined) {
+      this.weather = condition
+        ? {
+            condition,
+            label: PREVIEW_LABELS[condition],
+            temperature: this.#real.weather?.temperature ?? 18,
+          }
+        : null;
+    }
+    this.#apply();
+  }
+
+  endPreview(): void {
+    if (this.#real) {
+      this.time = skyForHour(new Date().getHours());
+      this.weather = this.#real.weather;
+    }
+    this.#real = null;
+    this.previewing = false;
+    this.#apply();
+  }
+
   /** Asks for the device location. Falls back to an error message (and city search). */
   async useLocation(): Promise<void> {
+    if (this.previewing) this.endPreview();
     if (!('geolocation' in navigator) || !window.isSecureContext) {
       this.error = 'Location isn’t available here. Search for your city instead.';
       return;
@@ -146,6 +189,7 @@ class SkyState {
   }
 
   async useCity(place: Place): Promise<void> {
+    if (this.previewing) this.endPreview();
     this.source = 'city';
     this.place = {
       ...place,
@@ -157,6 +201,7 @@ class SkyState {
   }
 
   useTimeOnly(): void {
+    if (this.previewing) this.endPreview();
     this.source = 'time';
     this.place = null;
     this.weather = null;
@@ -168,6 +213,7 @@ class SkyState {
 
   /** Fetches the weather if it's older than 30 minutes (or always, with `force`). */
   async refresh(force = false): Promise<void> {
+    if (this.previewing) return;
     if (!this.place || this.source === 'time') return;
     if (!force && Date.now() - this.#fetchedAt < REFRESH_MS) return;
     this.loading = true;

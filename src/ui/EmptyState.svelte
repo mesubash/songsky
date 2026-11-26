@@ -37,7 +37,13 @@ function playFrom(index: number) {
   <div class="intro">
     <p class="now">{skyNow}</p>
     <h2 id="empty-title" class="headline">Music that follows your sky.</h2>
-    <p class="lead">
+    <!-- Phones get a one-line version; computers have room for the full sentence. -->
+    <p class="lead short">
+      {prefs.onlineMusic
+        ? 'Free songs picked for your sky, or your own music.'
+        : 'Play the songs on this device.'}
+    </p>
+    <p class="lead long">
       {#if !prefs.onlineMusic}
         Bring your own music: Songsky plays the songs on this device, and they stay here.
       {:else if !prefs.localMusic}
@@ -52,7 +58,8 @@ function playFrom(index: number) {
     <div class="actions">
       {#if discover.hasSongs}
         <Button variant="primary" icon="play" disabled={!picks.length} onclick={() => playFrom(0)}>
-          Play songs for your sky
+          <span class="long-label">Play songs for your sky</span
+          ><span class="short-label">Play for your sky</span>
         </Button>
       {/if}
       {#if prefs.localMusic}
@@ -60,7 +67,9 @@ function playFrom(index: number) {
           <Button icon="folder" onclick={() => library.addFolder()}>Choose a folder</Button>
         {/if}
         <Button icon="plus" onclick={() => library.addFiles()}>
-          {library.canPickFolder ? 'Choose files' : 'Choose your songs'}
+          <span class="long-label"
+            >{library.canPickFolder ? 'Choose files' : 'Choose your songs'}</span
+          ><span class="short-label">Add songs</span>
         </Button>
       {/if}
     </div>
@@ -395,6 +404,52 @@ h3 {
 @keyframes pulse {
   from {
     opacity: 0.45;
+  }
+}
+/* Phones: a smaller headline, one line of intro, buttons side by side, and no drop hint
+   (files can't be dragged onto a phone). */
+.short,
+.short-label {
+  display: none;
+}
+
+@media (max-width: 720px) {
+  .home {
+    gap: var(--space-6);
+    padding-top: var(--space-4);
+  }
+
+  .intro {
+    gap: var(--space-3);
+  }
+
+  .headline {
+    font-size: var(--text-2xl);
+  }
+
+  .long,
+  .long-label {
+    display: none;
+  }
+
+  .short {
+    display: block;
+    font-size: var(--text-base);
+  }
+
+  .short-label {
+    display: inline;
+  }
+
+  .actions {
+    gap: var(--space-2);
+    padding-top: 0;
+  }
+}
+
+@media (pointer: coarse) {
+  .intro .hint {
+    display: none;
   }
 }
 </style>
