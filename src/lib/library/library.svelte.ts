@@ -59,6 +59,28 @@ class Library {
     this.#coverIds = new Set(coverIds);
     // Session-only tracks lost their audio on reload; drop them.
     this.tracks = tracks.filter((track) => track.source !== 'session').sort(compareTracks);
+    void this.#labelFolders();
+  }
+
+  /** Songs added from a folder before folders were recorded: work out which one, once. */
+  async #labelFolders(): Promise<void> {
+    const unlabelled = this.tracks.filter((t) => t.handle && !t.folder);
+    if (!unlabelled.length || !this.#folders.length) return;
+    const labelled: Track[] = [];
+    for (const track of unlabelled) {
+      for (const dir of this.#folders) {
+        if (track.handle && (await dir.resolve(track.handle)) !== null) {
+          labelled.push({ ...($state.snapshot(track) as Track), folder: dir.name });
+          break;
+        }
+      }
+    }
+    if (!labelled.length) return;
+    const byId = new Map(labelled.map((t) => [t.id, t]));
+    this.tracks = this.tracks.map((t) => byId.get(t.id) ?? t);
+    const tx = (await db()).transaction('tracks', 'readwrite');
+    for (const track of labelled) void tx.store.put(track);
+    await tx.done;
   }
 
   /** Makes streamed songs known to the player without adding them to the library. */
@@ -121,7 +143,10 @@ class Library {
       this.#folders.push(dir);
       this.folders = [...this.folders, dir.name];
     }
-    await this.#import(handles.map((handle) => ({ handle })));
+    await this.#import(
+      handles.map((handle) => ({ handle })),
+      dir.name,
+    );
   }
 
   /** Songs that live inside a folder (looked up through the browser's file handles). */
@@ -152,7 +177,10 @@ class Library {
     const handles: FileSystemFileHandle[] = [];
     for await (const handle of walkDirectory(dir)) handles.push(handle);
     // Songs already in the library are skipped by the import.
-    await this.#import(handles.map((handle) => ({ handle })));
+    await this.#import(
+      handles.map((handle) => ({ handle })),
+      name,
+    );
     if (gone.length) {
       toast.show(
         `${gone.length} ${gone.length === 1 ? 'song was' : 'songs were'} no longer in ${name}, so they were removed.`,
@@ -193,7 +221,10 @@ class Library {
     await this.#import(picked.map((file) => ({ file })));
   }
 
-  async #import(items: { file?: File; handle?: FileSystemFileHandle }[]): Promise<void> {
+  async #import(
+    items: { file?: File; handle?: FileSystemFileHandle }[],
+    folder?: string,
+  ): Promise<void> {
     toast.clear();
     this.progress = { done: 0, total: items.length };
     const database = await db();
@@ -208,6 +239,7 @@ class Library {
         if (!file) continue;
         const result = await readTrack(file, item.handle ? 'folder' : 'copy', item.handle);
         const { track } = result;
+        if (folder) track.folder = folder;
 
         if (!this.byId.has(track.id) && !results.some((r) => r.track.id === track.id)) {
           if (track.source === 'copy') {

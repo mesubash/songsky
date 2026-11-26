@@ -18,6 +18,8 @@ export interface Track {
   coverId: string | null;
   source: TrackSource;
   handle?: FileSystemFileHandle;
+  /** For songs read from a music folder: that folder's name. */
+  folder?: string;
   /** Stream tracks: where the audio and cover come from, and pages to credit the artist. */
   streamUrl?: string;
   artworkUrl?: string;

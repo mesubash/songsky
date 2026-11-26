@@ -4,11 +4,13 @@ import { ask } from '$lib/confirm.svelte';
 import { formatLength } from '$lib/format';
 import { browse, SORT_LABELS, type SortOrder } from '$lib/library/browse';
 import { library } from '$lib/library/library.svelte';
+import type { Track } from '$lib/library/types';
 import { memory } from '$lib/memory/memory.svelte';
 import { player } from '$lib/player/player.svelte';
 import { playlists } from '$lib/playlists/playlists.svelte';
+import { prefs } from '$lib/prefs.svelte';
 import { playlistHref } from '$lib/view.svelte';
-import Icon from './Icon.svelte';
+import Icon, { type IconName } from './Icon.svelte';
 import LibraryActions from './LibraryActions.svelte';
 import { placeMenu } from './menu';
 import TrackList from './TrackList.svelte';
@@ -23,7 +25,42 @@ let order = $state<SortOrder>(
   (Object.keys(SORT_LABELS) as SortOrder[]).find((o) => o === localStorage.getItem(SORT_KEY)) ??
     'artist',
 );
-const shown = $derived(browse(library.visibleTracks, query, order));
+/** Where songs came from: each music folder, files added one by one, and saved online songs. */
+type Group = { id: string; label: string; icon: IconName; count: number };
+const groups = $derived.by((): Group[] => {
+  const tracks = library.visibleTracks;
+  const list: Group[] = [];
+  if (prefs.localMusic) {
+    for (const folder of library.folders) {
+      list.push({
+        id: `folder:${folder}`,
+        label: folder,
+        icon: 'folder',
+        count: tracks.filter((t) => t.folder === folder).length,
+      });
+    }
+  }
+  const files = tracks.filter((t) => t.source !== 'stream' && !t.folder).length;
+  if (files) list.push({ id: 'files', label: 'Added files', icon: 'music', count: files });
+  const online = tracks.filter((t) => t.source === 'stream').length;
+  if (online) list.push({ id: 'online', label: 'Saved online', icon: 'heart', count: online });
+  return list;
+});
+
+let group = $state('all');
+/** The chosen group, or All when it no longer exists (e.g. its folder was removed). */
+const active = $derived(groups.some((g) => g.id === group) ? group : 'all');
+const inGroup = (t: Track) =>
+  active === 'all' ||
+  (active === 'files'
+    ? t.source !== 'stream' && !t.folder
+    : active === 'online'
+      ? t.source === 'stream'
+      : `folder:${t.folder}` === active);
+const grouped = $derived(library.visibleTracks.filter(inGroup));
+const shown = $derived(browse(grouped, query, order));
+/** Show the chips when there's a choice to make, or a folder can be added. */
+const showGroups = $derived(groups.length > 1 || (prefs.localMusic && library.canPickFolder));
 
 async function newPlaylist() {
   const playlist = await playlists.create();
@@ -71,7 +108,7 @@ async function clearLibrary() {
       {/if}
     </div>
     <div class="actions">
-      <LibraryActions />
+      <LibraryActions tracks={grouped} />
       <div class="find">
         <search class="filter">
           <label class="visually-hidden" for="library-filter">Search your library</label>
@@ -123,6 +160,37 @@ async function clearLibrary() {
     </div>
   </div>
 
+  {#if showGroups}
+    <nav class="groups" aria-label="Show songs from">
+      <button
+        type="button"
+        class="group"
+        aria-pressed={active === 'all'}
+        onclick={() => (group = 'all')}
+      >
+        All songs <span class="n">{library.visibleTracks.length}</span>
+      </button>
+      {#each groups as g (g.id)}
+        <button
+          type="button"
+          class="group"
+          aria-pressed={active === g.id}
+          onclick={() => (group = g.id)}
+        >
+          <Icon name={g.icon} size={15} />{g.label} <span class="n">{g.count}</span>
+        </button>
+      {/each}
+      {#if prefs.localMusic && library.canPickFolder}
+        <button type="button" class="group add" onclick={() => library.addFolder()}>
+          <Icon name="plus" size={15} />Add folder
+        </button>
+      {/if}
+      {#if library.folders.length && prefs.localMusic}
+        <a class="manage" href="#settings/music">Manage folders</a>
+      {/if}
+    </nav>
+  {/if}
+
   <!-- Phones have no sidebar, so playlists show here as a row of chips. -->
   <nav class="playlist-chips" aria-label="Playlists">
     {#each playlists.list as playlist (playlist.id)}
@@ -135,8 +203,14 @@ async function clearLibrary() {
     <TrackList tracks={shown} />
   {:else}
     <p class="no-match">
-      No songs match “{query}”.
-      <button type="button" onclick={() => (query = '')}>Show all songs</button>
+      {#if query}
+        No songs match “{query}”.
+        <button type="button" onclick={() => (query = '')}>Show all songs</button>
+      {:else}
+        No songs here yet. Rescan the folder from
+        <a href="#settings/music">Settings, Your music</a>, or
+        <button type="button" onclick={() => (group = 'all')}>show all songs</button>.
+      {/if}
     </p>
   {/if}
 </section>
@@ -257,6 +331,66 @@ async function clearLibrary() {
   .playlist-chips {
     display: none;
   }
+}
+
+/* Filter chips: where songs came from. The chosen one is filled. */
+.groups {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  padding-bottom: var(--space-4);
+}
+
+.group {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 36px;
+  padding: 0 var(--space-3) 0 var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-full);
+  background: var(--surface);
+  color: var(--text);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.group:hover {
+  background: var(--surface-strong);
+}
+
+.group[aria-pressed="true"] {
+  border-color: transparent;
+  background: var(--text);
+  color: var(--sky-top);
+}
+
+.n {
+  min-width: 1.5rem;
+  padding: 1px 6px;
+  border-radius: var(--radius-full);
+  background: color-mix(in srgb, currentColor 14%, transparent);
+  font-size: var(--text-xs);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.group.add {
+  border-style: dashed;
+  background: none;
+  color: var(--text-muted);
+}
+
+.manage {
+  margin-left: var(--space-2);
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  text-underline-offset: 3px;
+}
+
+.no-match a {
+  color: var(--text);
 }
 
 .no-match {
