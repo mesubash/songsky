@@ -1,3 +1,4 @@
+import { updateTabIcon } from './tab-icon';
 import { applySky, type Sky, skyForHour } from './time';
 import {
   fetchWeather,
@@ -135,6 +136,7 @@ class SkyState {
     const root = document.documentElement;
     if (this.weather) root.dataset.weather = this.weather.condition;
     else delete root.dataset.weather;
+    updateTabIcon();
   }
 
   #restore(): void {
