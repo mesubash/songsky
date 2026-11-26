@@ -50,6 +50,7 @@ function playFrom(index: number) {
         {library.canPickFolder ? 'Choose files' : 'Choose your songs'}
       </Button>
     </div>
+    <p class="hint">You can also drop audio files anywhere on this page.</p>
   </div>
 
   <section class="shelf" aria-labelledby="shelf-title">
@@ -101,15 +102,14 @@ function playFrom(index: number) {
       <p class="hint">Couldn’t reach the free music library. Check your connection.</p>
     {/if}
   </section>
-
-  <p class="hint">You can also drop audio files anywhere on this page.</p>
 </section>
 
 <style>
+/* Sized to fit one screen: spacing and cover size follow the window height. */
 .home {
   display: grid;
-  gap: var(--space-12);
-  padding-block: clamp(var(--space-6), 5vh, var(--space-12)) var(--space-8);
+  gap: clamp(var(--space-6), 4vh, var(--space-12));
+  padding-block: clamp(var(--space-4), 4vh, var(--space-12)) 0;
 }
 
 .intro {
@@ -175,8 +175,12 @@ h3 {
 .cards {
   display: grid;
   grid-auto-flow: column;
-  grid-auto-columns: minmax(9.5rem, 1fr);
-  gap: clamp(var(--space-3), 2vw, var(--space-6));
+  --gap: clamp(var(--space-3), 2vw, var(--space-6));
+
+  /* Six covers across, but never taller than a fifth of the window. */
+  grid-auto-columns: max(8rem, min(calc((100% - 5 * var(--gap)) / 6), 20vh));
+  justify-content: space-between;
+  gap: var(--gap);
   margin: 0;
   padding: 0 0 var(--space-6);
   border-bottom: 1px solid color-mix(in srgb, var(--accent) 55%, transparent);

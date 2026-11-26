@@ -162,6 +162,7 @@ $effect(() => {
 .actions {
   display: flex;
   gap: var(--space-2);
+  margin-left: auto;
 }
 
 @media (max-width: 720px) {

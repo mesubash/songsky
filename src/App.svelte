@@ -126,7 +126,7 @@ function ondrop(event: DragEvent) {
      centered inside at the shared content width. */
   .content {
     min-width: 0;
-    padding-bottom: var(--space-12);
+    padding-bottom: var(--space-6);
   }
 
   main {
@@ -135,8 +135,9 @@ function ondrop(event: DragEvent) {
     padding-inline: var(--gutter);
   }
 
+  /* Room for the player bar (97px) so the last row is never hidden under it. */
   .has-player .content {
-    padding-bottom: calc(120px + env(safe-area-inset-bottom));
+    padding-bottom: calc(104px + env(safe-area-inset-bottom));
   }
 }
 
