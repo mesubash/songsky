@@ -58,7 +58,7 @@ export async function shareSongArt(): Promise<void> {
       horizon: read('--sky-horizon'),
       glow: read('--glow'),
     },
-    skyFilter: getComputedStyle(document.body, '::before').filter,
+    skyFilter: read('--sky-filter'),
     displayFont: read('--font-display'),
     textFont: read('--font-sans'),
   });

@@ -50,10 +50,24 @@
   --on-accent: #1d1530;
   --focus: #ffd39c;
 
+  /* Logo: the brand (dusk) look by default; each sky below gives it its own colours. */
+  --logo-top: #1e2150;
+  --logo-mid: #4b3b7a;
+  --logo-horizon: #e07a5f;
+  --logo-sun: #f6b26b;
+  --logo-ground: #161a36;
+  --logo-moon: 0;
+
   color-scheme: dark;
 }
 
 :root[data-sky="dawn"] {
+  --logo-top: #2b3a78;
+  --logo-mid: #7d6ba8;
+  --logo-horizon: #f4b7a0;
+  --logo-sun: #ffcf9e;
+  --logo-ground: #1d2147;
+  --logo-moon: 0;
   --sky-top: #2b3a78;
   --sky-mid: #7d6ba8;
   --sky-horizon: #f4b7a0;
@@ -66,6 +80,12 @@
 }
 
 :root[data-sky="day"] {
+  --logo-top: #3f78cf;
+  --logo-mid: #7fb2ec;
+  --logo-horizon: #fde3a7;
+  --logo-sun: #ffad3b;
+  --logo-ground: #15295c;
+  --logo-moon: 0;
   --sky-top: #6fa3e0;
   --sky-mid: #a9cdf0;
   --sky-horizon: #e8f2fb;
@@ -83,6 +103,12 @@
 }
 
 :root[data-sky="dusk"] {
+  --logo-top: #1e2150;
+  --logo-mid: #4b3b7a;
+  --logo-horizon: #e07a5f;
+  --logo-sun: #f6b26b;
+  --logo-ground: #161a36;
+  --logo-moon: 0;
   --sky-top: #1e2150;
   --sky-mid: #4b3b7a;
   --sky-horizon: #e07a5f;
@@ -92,4 +118,13 @@
   --accent: #f6b26b;
   --on-accent: #251a3a;
   --focus: #ffd9a8;
+}
+
+:root[data-sky="night"] {
+  --logo-top: #070a22;
+  --logo-mid: #171b4a;
+  --logo-horizon: #34397a;
+  --logo-sun: #e9e6ff;
+  --logo-ground: #0a0c22;
+  --logo-moon: 1;
 }
