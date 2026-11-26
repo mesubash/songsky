@@ -9,7 +9,8 @@ import { memory } from '$lib/memory/memory.svelte';
 import { player } from '$lib/player/player.svelte';
 import { playlists } from '$lib/playlists/playlists.svelte';
 import { prefs } from '$lib/prefs.svelte';
-import { playlistHref } from '$lib/view.svelte';
+import { libraryHref, playlistHref, view } from '$lib/view.svelte';
+import Button from './Button.svelte';
 import Icon, { type IconName } from './Icon.svelte';
 import LibraryActions from './LibraryActions.svelte';
 import { placeMenu } from './menu';
@@ -25,13 +26,23 @@ let order = $state<SortOrder>(
   (Object.keys(SORT_LABELS) as SortOrder[]).find((o) => o === localStorage.getItem(SORT_KEY)) ??
     'artist',
 );
-/** Where songs came from: each music folder, files added one by one, and saved online songs. */
+/**
+ * Where songs came from: Local music (your files), each music folder, files added one by
+ * one, and songs saved from online. Each has its own address, so the sidebar can link here.
+ */
 type Group = { id: string; label: string; icon: IconName; count: number };
+const isLocal = (t: Track) => t.source !== 'stream';
 const groups = $derived.by((): Group[] => {
   const tracks = library.visibleTracks;
   const list: Group[] = [];
   if (prefs.localMusic) {
-    for (const folder of library.folders) {
+    list.push({
+      id: 'local',
+      label: 'Local music',
+      icon: 'music',
+      count: tracks.filter(isLocal).length,
+    });
+    for (const folder of library.folderNames) {
       list.push({
         id: `folder:${folder}`,
         label: folder,
@@ -39,28 +50,33 @@ const groups = $derived.by((): Group[] => {
         count: tracks.filter((t) => t.folder === folder).length,
       });
     }
+    const files = tracks.filter((t) => isLocal(t) && !t.folder).length;
+    if (files && library.folderNames.length) {
+      list.push({ id: 'files', label: 'Added files', icon: 'plus', count: files });
+    }
   }
-  const files = tracks.filter((t) => t.source !== 'stream' && !t.folder).length;
-  if (files) list.push({ id: 'files', label: 'Added files', icon: 'music', count: files });
-  const online = tracks.filter((t) => t.source === 'stream').length;
-  if (online) list.push({ id: 'online', label: 'Saved online', icon: 'heart', count: online });
+  const online = tracks.filter((t) => !isLocal(t)).length;
+  if (online && prefs.onlineMusic) {
+    list.push({ id: 'online', label: 'Saved online', icon: 'heart', count: online });
+  }
   return list;
 });
 
-let group = $state('all');
-/** The chosen group, or All when it no longer exists (e.g. its folder was removed). */
-const active = $derived(groups.some((g) => g.id === group) ? group : 'all');
+/** The group in the address, or All when it doesn't exist (e.g. its folder was removed). */
+const active = $derived(groups.some((g) => g.id === view.libraryGroup) ? view.libraryGroup : 'all');
 const inGroup = (t: Track) =>
   active === 'all' ||
-  (active === 'files'
-    ? t.source !== 'stream' && !t.folder
-    : active === 'online'
-      ? t.source === 'stream'
-      : `folder:${t.folder}` === active);
+  (active === 'local'
+    ? isLocal(t)
+    : active === 'files'
+      ? isLocal(t) && !t.folder
+      : active === 'online'
+        ? !isLocal(t)
+        : `folder:${t.folder}` === active);
 const grouped = $derived(library.visibleTracks.filter(inGroup));
 const shown = $derived(browse(grouped, query, order));
-/** Show the chips when there's a choice to make, or a folder can be added. */
-const showGroups = $derived(groups.length > 1 || (prefs.localMusic && library.canPickFolder));
+/** Chips show whenever your music is on (so Local music is always findable), or there's a choice. */
+const showGroups = $derived(prefs.localMusic || groups.length > 1);
 
 async function newPlaylist() {
   const playlist = await playlists.create();
@@ -160,33 +176,47 @@ async function clearLibrary() {
     </div>
   </div>
 
+  {#if library.needsReconnect.length && prefs.localMusic}
+    <div class="reconnect" role="status">
+      <Icon name="folder" size={18} />
+      <p>
+        To check {library.needsReconnect.join(', ')} for new songs, Songsky needs your permission
+        again.
+      </p>
+      <Button
+        onclick={async () => {
+          for (const name of library.needsReconnect) await library.rescanFolder(name);
+        }}
+        >Reconnect</Button
+      >
+    </div>
+  {/if}
+
   {#if showGroups}
     <nav class="groups" aria-label="Show songs from">
-      <button
-        type="button"
+      <a
         class="group"
-        aria-pressed={active === 'all'}
-        onclick={() => (group = 'all')}
+        href={libraryHref('all')}
+        aria-current={active === 'all' ? 'page' : undefined}
       >
         All songs <span class="n">{library.visibleTracks.length}</span>
-      </button>
+      </a>
       {#each groups as g (g.id)}
-        <button
-          type="button"
+        <a
           class="group"
-          aria-pressed={active === g.id}
-          onclick={() => (group = g.id)}
+          href={libraryHref(g.id)}
+          aria-current={active === g.id ? 'page' : undefined}
         >
           <Icon name={g.icon} size={15} />{g.label} <span class="n">{g.count}</span>
-        </button>
+        </a>
       {/each}
-      {#if prefs.localMusic && library.canPickFolder}
+      {#if prefs.localMusic && library.canChooseFolder}
         <button type="button" class="group add" onclick={() => library.addFolder()}>
           <Icon name="plus" size={15} />Add folder
         </button>
       {/if}
-      {#if library.folders.length && prefs.localMusic}
-        <a class="manage" href="#settings/music">Manage folders</a>
+      {#if prefs.localMusic}
+        <a class="manage" href="#settings/music">Folder settings</a>
       {/if}
     </nav>
   {/if}
@@ -209,7 +239,7 @@ async function clearLibrary() {
       {:else}
         No songs here yet. Rescan the folder from
         <a href="#settings/music">Settings, Your music</a>, or
-        <button type="button" onclick={() => (group = 'all')}>show all songs</button>.
+        <a href="#library">show all songs</a>.
       {/if}
     </p>
   {/if}
@@ -344,6 +374,7 @@ async function clearLibrary() {
 
 .group {
   display: inline-flex;
+  text-decoration: none;
   align-items: center;
   gap: var(--space-2);
   min-height: 36px;
@@ -360,7 +391,7 @@ async function clearLibrary() {
   background: var(--surface-strong);
 }
 
-.group[aria-pressed="true"] {
+.group[aria-current="page"] {
   border-color: transparent;
   background: var(--text);
   color: var(--sky-top);
@@ -387,6 +418,24 @@ async function clearLibrary() {
   color: var(--text-muted);
   font-size: var(--text-sm);
   text-underline-offset: 3px;
+}
+
+/* Shown when a connected folder needs permission again before it can be checked. */
+.reconnect {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+}
+
+.reconnect p {
+  flex: 1 1 16rem;
+  font-size: var(--text-sm);
 }
 
 .no-match a {

@@ -2,6 +2,24 @@ export type View = 'library' | 'discover' | 'memories' | 'playlist' | 'settings'
 
 const PLAYLIST_PREFIX = '#playlist/';
 const SETTINGS_PREFIX = '#settings/';
+const LIBRARY_PREFIX = '#library/';
+
+/**
+ * A group of the library: `local` (your files), `online` (saved songs), `files` (added one
+ * by one) or `folder:<name>`. In the address as #library/local or #library/folder/Music.
+ */
+const libraryGroupFromHash = (): string => {
+  if (!location.hash.startsWith(LIBRARY_PREFIX)) return 'all';
+  const rest = decodeURIComponent(location.hash.slice(LIBRARY_PREFIX.length));
+  return rest.startsWith('folder/') ? `folder:${rest.slice('folder/'.length)}` : rest || 'all';
+};
+
+export const libraryHref = (group: string): string =>
+  group === 'all'
+    ? '#library'
+    : group.startsWith('folder:')
+      ? `${LIBRARY_PREFIX}folder/${encodeURIComponent(group.slice('folder:'.length))}`
+      : `${LIBRARY_PREFIX}${group}`;
 const DISCOVER_PREFIX = '#discover/';
 
 export type DiscoverTab = 'for-you' | 'genres' | 'playlists' | 'radio';
@@ -40,6 +58,7 @@ class ViewState {
   playlistId = $state<string | null>(playlistFromHash());
   settingsSection = $state<string | null>(settingsFromHash());
   discoverTab = $state<DiscoverTab>(discoverTabFromHash());
+  libraryGroup = $state(libraryGroupFromHash());
 
   constructor() {
     addEventListener('hashchange', () => {
@@ -47,6 +66,7 @@ class ViewState {
       this.playlistId = playlistFromHash();
       this.settingsSection = settingsFromHash();
       this.discoverTab = discoverTabFromHash();
+      this.libraryGroup = libraryGroupFromHash();
     });
   }
 }

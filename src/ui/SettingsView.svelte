@@ -8,7 +8,7 @@ import { library } from '$lib/library/library.svelte';
 import { memory } from '$lib/memory/memory.svelte';
 import { player } from '$lib/player/player.svelte';
 import { playlists } from '$lib/playlists/playlists.svelte';
-import { type PlayMode, prefs } from '$lib/prefs.svelte';
+import { prefs } from '$lib/prefs.svelte';
 import { pwa } from '$lib/pwa.svelte';
 import { sky } from '$lib/sky/sky.svelte';
 import { toast } from '$lib/toast.svelte';
@@ -108,19 +108,11 @@ $effect(() => {
   });
 });
 
-const MODES: { id: PlayMode; label: string }[] = [
-  { id: 'both', label: 'Both' },
-  { id: 'local', label: 'Only my music' },
-  { id: 'online', label: 'Only online music' },
-];
-
-const MODE_HINTS: Record<PlayMode, string> = {
-  both: 'Your own songs and free music online: Discover, radio and the sky picks.',
-  local:
-    'Only the songs on this device. Discover, radio and online songs are hidden, so no music is fetched online.',
-  online:
-    'Only free music online. Adding your own songs is turned off, and your files are hidden from the library.',
-};
+/** My music and Online music as two switches; at least one stays on. */
+function setPlays(local: boolean, online: boolean) {
+  if (!local && !online) return;
+  prefs.setMode(local && online ? 'both' : local ? 'local' : 'online');
+}
 
 let busyFolder = $state<string | null>(null);
 
@@ -137,7 +129,7 @@ async function removeFolder(folder: string) {
   const ok = await ask({
     title: `Remove “${folder}”?`,
     message:
-      'Songsky stops reading this folder and removes its songs from your library. The files on your device are not touched.',
+      'Its songs are removed from your library and Songsky stops reading the folder. The files on your device are not touched.',
     action: 'Remove folder',
   });
   if (!ok) return;
@@ -255,6 +247,24 @@ async function clearLibrary() {
 }
 
 const APP_URL = 'https://songsky.subashsdhami.com.np';
+const REPO_URL = 'https://github.com/mesubash/songsky';
+
+/**
+ * The repository's star count, read from GitHub's public API when About opens. GitHub
+ * only shares it for public repositories; until then the Star button shows no count.
+ */
+let repo = $state<{ stars: number } | null>(null);
+$effect(() => {
+  if (current?.id !== 'about' || repo) return;
+  fetch('https://api.github.com/repos/mesubash/songsky')
+    .then((r) => (r.ok ? r.json() : null))
+    .then((data: { stargazers_count?: number; private?: boolean } | null) => {
+      if (data && !data.private && typeof data.stargazers_count === 'number') {
+        repo = { stars: data.stargazers_count };
+      }
+    })
+    .catch(() => {});
+});
 
 async function shareApp() {
   const data = {
@@ -445,53 +455,73 @@ const CREDITS: { name: string; what: string; url: string }[] = [
         {/if}
       {:else if current.id === 'music'}
         <div class="rows">
-          <div class="row stack">
+          <div class="row">
             <div class="text">
-              <p class="name">What Songsky plays</p>
-              <p class="desc">{MODE_HINTS[prefs.mode]}</p>
+              <p class="name">My music</p>
+              <p class="desc">
+                Songs on this device: folders and files you add. Turn off to use only online music.
+              </p>
             </div>
-            <fieldset class="segmented">
-              <legend class="visually-hidden">What Songsky plays</legend>
-              {#each MODES as option (option.id)}
-                <button
-                  type="button"
-                  aria-pressed={prefs.mode === option.id}
-                  onclick={() => prefs.setMode(option.id)}
-                >
-                  {option.label}
-                </button>
-              {/each}
-            </fieldset>
+            <Switch
+              bare
+              label="My music"
+              checked={prefs.localMusic}
+              disabled={prefs.localMusic && !prefs.onlineMusic}
+              onchange={(on) => setPlays(on, prefs.onlineMusic)}
+            />
+          </div>
+          <div class="row">
+            <div class="text">
+              <p class="name">Online music</p>
+              <p class="desc">
+                Free music from the internet: Discover, radio and songs you saved. Turn off and no
+                music is fetched online.
+              </p>
+            </div>
+            <Switch
+              bare
+              label="Online music"
+              checked={prefs.onlineMusic}
+              disabled={prefs.onlineMusic && !prefs.localMusic}
+              onchange={(on) => setPlays(prefs.localMusic, on)}
+            />
           </div>
         </div>
+        {#if prefs.mode !== 'both'}
+          <p class="note">
+            At least one has to stay on, so the other can’t be turned off right now.
+          </p>
+        {/if}
 
         {#if prefs.localMusic}
           <div class="section-row">
             <h4>Music folders</h4>
-            {#if library.canPickFolder}
+            {#if library.canChooseFolder}
               <Button icon="folder" onclick={() => library.addFolder()}>Add a folder</Button>
             {/if}
           </div>
-          {#if !library.canPickFolder}
-            <p class="note">
-              This browser can’t keep a folder connected, so songs you add are copied into Songsky’s
-              storage instead. Chrome and Edge can read a music folder directly.
-            </p>
-          {:else if library.folders.length}
+          {#if library.folderNames.length}
             <ul class="rows">
-              {#each library.folders as folder (folder)}
+              {#each library.folderNames as folder (folder)}
+                {@const connected = library.folders.includes(folder)}
                 <li class="row">
                   <div class="text">
                     <p class="name">{folder}</p>
-                    <p class="desc">Songsky reads songs from this folder on your device.</p>
+                    <p class="desc">
+                      {connected
+                        ? 'Connected: Songsky reads songs straight from this folder.'
+                        : 'Copied into Songsky. Add the folder again to pick up new songs.'}
+                    </p>
                   </div>
                   <div class="control">
-                    <Button
-                      variant="quiet"
-                      disabled={busyFolder === folder}
-                      onclick={() => rescan(folder)}
-                      >{busyFolder === folder ? 'Rescanning…' : 'Rescan'}</Button
-                    >
+                    {#if connected}
+                      <Button
+                        variant="quiet"
+                        disabled={busyFolder === folder}
+                        onclick={() => rescan(folder)}
+                        >{busyFolder === folder ? 'Rescanning…' : 'Rescan'}</Button
+                      >
+                    {/if}
                     <Button variant="quiet" onclick={() => removeFolder(folder)}>Remove</Button>
                   </div>
                 </li>
@@ -501,10 +531,35 @@ const CREDITS: { name: string; what: string; url: string }[] = [
             <div class="empty">
               <p class="name">No music folders yet</p>
               <p class="desc">
-                Add a folder and Songsky reads the songs in it, and notices new ones when you
-                rescan.
+                Add the folder where you keep your music and Songsky reads the songs in it.
               </p>
             </div>
+          {/if}
+
+          {#if library.canPickFolder}
+            <div class="rows">
+              <div class="row">
+                <div class="text">
+                  <p class="name">Check folders when Songsky opens</p>
+                  <p class="desc">
+                    New songs in your connected folders are added automatically, and removed files
+                    leave the library.
+                  </p>
+                </div>
+                <Switch
+                  bare
+                  label="Check folders when Songsky opens"
+                  checked={prefs.autoRescan}
+                  onchange={(on) => prefs.setAutoRescan(on)}
+                />
+              </div>
+            </div>
+          {:else if library.canChooseFolder}
+            <p class="note">
+              This browser can pick a folder once and copies its songs, but it can’t keep the folder
+              connected to check for new songs automatically. Chrome and Edge can. In Brave, turn on
+              “File System Access API” at brave://flags, then restart Brave.
+            </p>
           {/if}
         {/if}
       {:else if current.id === 'sources'}
@@ -769,28 +824,32 @@ const CREDITS: { name: string; what: string; url: string }[] = [
           </div>
         </div>
 
+        <div class="github">
+          <Icon name="github" size={36} />
+          <div class="gh-text">
+            <a class="gh-name" href={REPO_URL} target="_blank" rel="noopener noreferrer"
+              >mesubash/songsky</a
+            >
+            <p class="desc">Free and open source under the MIT license.</p>
+          </div>
+          <a class="gh-star" href={REPO_URL} target="_blank" rel="noopener noreferrer">
+            <Icon name="star" size={16} />Star
+            {#if repo}
+              <span class="gh-count">{repo.stars.toLocaleString()}</span>
+            {/if}
+          </a>
+        </div>
+
         <div class="rows">
           <a
             class="row link-row"
-            href="https://github.com/mesubash/songsky/issues/new"
+            href="{REPO_URL}/issues/new"
             target="_blank"
             rel="noopener noreferrer"
           >
             <span class="text">
               <span class="name">Report a problem or suggest an idea</span>
               <span class="desc">Opens a new issue on GitHub.</span>
-            </span>
-            <Icon name="external" size={16} />
-          </a>
-          <a
-            class="row link-row"
-            href="https://github.com/mesubash/songsky"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <span class="text">
-              <span class="name">Source code</span>
-              <span class="desc">Free and open source under the MIT license.</span>
             </span>
             <Icon name="external" size={16} />
           </a>
@@ -815,7 +874,16 @@ const CREDITS: { name: string; what: string; url: string }[] = [
           {/each}
         </ul>
 
-        <p class="made">Made by Subash Singh Dhami.</p>
+        <p class="made">
+          Made with <span class="heart" role="img" aria-label="love">❤️</span> by
+          <a
+            class="author"
+            href="https://www.subashsdhami.com.np"
+            target="_blank"
+            rel="noopener noreferrer"
+            >Subash Singh Dhami</a
+          >
+        </p>
       {/if}
     </section>
   {/if}
@@ -1226,6 +1294,65 @@ kbd {
 .credits .row {
   min-height: 48px;
   padding-block: var(--space-2);
+}
+
+.github {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-6);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+}
+
+.gh-text {
+  flex: 1;
+  display: grid;
+  min-width: 0;
+}
+
+.gh-name {
+  color: var(--text);
+  font-weight: 650;
+  text-decoration: none;
+}
+
+.gh-name:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.gh-star {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 40px;
+  padding: 0 var(--space-2) 0 var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-full);
+  background: var(--surface-strong);
+  color: var(--text);
+  font-size: var(--text-sm);
+  font-weight: 650;
+  text-decoration: none;
+}
+
+.gh-star :global(svg) {
+  color: #f5b942;
+}
+
+.gh-count {
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  background: var(--surface);
+  font-variant-numeric: tabular-nums;
+}
+
+.author {
+  color: var(--text);
+  font-weight: 650;
+  text-underline-offset: 3px;
 }
 
 .made {

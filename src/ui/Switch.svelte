@@ -6,7 +6,15 @@ let {
   label,
   onchange,
   bare = false,
-}: { checked: boolean; label: string; onchange: (on: boolean) => void; bare?: boolean } = $props();
+  disabled = false,
+}: {
+  checked: boolean;
+  label: string;
+  onchange: (on: boolean) => void;
+  bare?: boolean;
+  /** Locked in its current state (e.g. the last option that must stay on). */
+  disabled?: boolean;
+} = $props();
 </script>
 
 <label class="switch">
@@ -15,6 +23,7 @@ let {
     role="switch"
     aria-checked={checked}
     {checked}
+    {disabled}
     onchange={(e) => onchange(e.currentTarget.checked)}
   >
   <span class:visually-hidden={bare}>{label}</span>
@@ -58,5 +67,13 @@ let {
 .switch input:checked::before {
   background: var(--on-accent);
   transform: translateX(18px);
+}
+.switch:has(input:disabled) {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.switch input:disabled {
+  cursor: not-allowed;
 }
 </style>

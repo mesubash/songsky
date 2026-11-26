@@ -9,6 +9,7 @@ import { library } from '$lib/library/library.svelte';
 import type { Track } from '$lib/library/types';
 import { player } from '$lib/player/player.svelte';
 import { playlists } from '$lib/playlists/playlists.svelte';
+import { prefs } from '$lib/prefs.svelte';
 import { toast } from '$lib/toast.svelte';
 import { view } from '$lib/view.svelte';
 import Button from './Button.svelte';
@@ -83,6 +84,11 @@ const fromLibrary = $derived(
     .slice(0, 8),
 );
 const fromOnline = $derived(online.filter((t) => !inPlaylist.has(t.id)).slice(0, 10));
+/** With nothing typed, today's sky picks are offered so there's always something to add. */
+const suggested = $derived(discover.forSky.filter((t) => !inPlaylist.has(t.id)).slice(0, 8));
+$effect(() => {
+  if (discover.hasSongs) void discover.refresh();
+});
 
 $effect(() => {
   const q = query.trim();
@@ -239,6 +245,30 @@ async function add(track: Track) {
               {@render suggestion(track)}
             {/each}
           </ul>
+        {/if}
+
+        {#if !query.trim() && discover.hasSongs && suggested.length}
+          <h4>Suggested for your sky</h4>
+          <ul class="suggestions">
+            {#each suggested as track (track.id)}
+              {@render suggestion(track)}
+            {/each}
+          </ul>
+        {/if}
+
+        {#if !query.trim() && (prefs.localMusic || discover.hasSongs)}
+          <div class="more-ways">
+            {#if prefs.localMusic}
+              <Button icon="plus" onclick={() => library.addFiles()}
+                >Add songs from this device</Button
+              >
+            {/if}
+            {#if discover.hasSongs}
+              <Button icon="disc" onclick={() => (location.hash = '#discover')}
+                >Browse Discover</Button
+              >
+            {/if}
+          </div>
         {/if}
 
         {#if query.trim().length >= 2 && discover.hasSongs}
@@ -407,6 +437,13 @@ h4 {
 }
 
 h4 {
+  padding-top: var(--space-2);
+}
+
+.more-ways {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
   padding-top: var(--space-2);
 }
 

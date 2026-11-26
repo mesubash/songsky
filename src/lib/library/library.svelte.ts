@@ -2,7 +2,16 @@ import { SvelteMap } from 'svelte/reactivity';
 import { prefs } from '$lib/prefs.svelte';
 import { toast } from '$lib/toast.svelte';
 import { db } from './db';
-import { canPickFolder, isAbortError, isAudioFile, pickFiles, walkDirectory } from './files';
+import {
+  canChooseFolder,
+  canPickFolder,
+  isAbortError,
+  isAudioFile,
+  pickFiles,
+  pickFolderFiles,
+  trackIdFor,
+  walkDirectory,
+} from './files';
 import { type ReadResult, readTrack } from './metadata';
 import type { Track } from './types';
 
@@ -44,6 +53,13 @@ class Library {
   #folders: FileSystemDirectoryHandle[] = [];
   /** Names of the folders Songsky reads (folder access, Chromium browsers). */
   folders = $state<string[]>([]);
+  /** Connected folders the browser wants permission for again before they can be read. */
+  needsReconnect = $state<string[]>([]);
+  readonly canChooseFolder = canChooseFolder;
+  /** Every music folder: connected ones, and folders whose songs were copied in. */
+  folderNames = $derived([
+    ...new Set([...this.folders, ...this.tracks.flatMap((t) => (t.folder ? [t.folder] : []))]),
+  ]);
   #coverIds = new Set<string>();
   #coverUrls = new Map<string, Promise<string | null>>();
 
@@ -59,7 +75,9 @@ class Library {
     this.#coverIds = new Set(coverIds);
     // Session-only tracks lost their audio on reload; drop them.
     this.tracks = tracks.filter((track) => track.source !== 'session').sort(compareTracks);
-    void this.#labelFolders();
+    void this.#labelFolders().then(() => {
+      if (prefs.autoRescan) void this.checkFolders();
+    });
   }
 
   /** Songs added from a folder before folders were recorded: work out which one, once. */
@@ -123,6 +141,21 @@ class Library {
   }
 
   async addFolder(): Promise<void> {
+    if (!canPickFolder) {
+      // Brave, Firefox, Safari: pick the folder once; its songs are copied into Songsky.
+      const { name, files } = await pickFolderFiles();
+      if (!name) return;
+      if (!files.length) {
+        toast.show(`No songs Songsky can play were found in ${name}.`);
+        return;
+      }
+      void navigator.storage?.persist?.();
+      await this.#import(
+        files.map((file) => ({ file })),
+        name,
+      );
+      return;
+    }
     let dir: FileSystemDirectoryHandle;
     try {
       dir = await window.showDirectoryPicker({ id: 'songsky-music', mode: 'read' });
@@ -158,13 +191,23 @@ class Library {
     return inside;
   }
 
-  /** Reads a folder again: adds new songs and drops songs whose files are gone. */
-  async rescanFolder(name: string): Promise<void> {
+  /**
+   * Reads a folder again: adds new songs and drops songs whose files are gone. `quiet` is
+   * the automatic check when Songsky opens: it never asks for permission and only speaks
+   * up when something changed.
+   */
+  async rescanFolder(name: string, { quiet = false } = {}): Promise<void> {
     const dir = this.#folders.find((f) => f.name === name);
     if (!dir) return;
     if ((await dir.queryPermission({ mode: 'read' })) !== 'granted') {
+      if (quiet) {
+        if (!this.needsReconnect.includes(name))
+          this.needsReconnect = [...this.needsReconnect, name];
+        return;
+      }
       if ((await dir.requestPermission({ mode: 'read' })) !== 'granted') return;
     }
+    this.needsReconnect = this.needsReconnect.filter((n) => n !== name);
     const gone: string[] = [];
     for (const track of await this.#tracksIn(dir)) {
       try {
@@ -180,6 +223,7 @@ class Library {
     await this.#import(
       handles.map((handle) => ({ handle })),
       name,
+      { quiet },
     );
     if (gone.length) {
       toast.show(
@@ -188,14 +232,26 @@ class Library {
     }
   }
 
+  /** Checks every connected folder for new or removed songs (when Songsky opens). */
+  async checkFolders(): Promise<void> {
+    for (const name of this.folders) await this.rescanFolder(name, { quiet: true });
+  }
+
   /** Stops reading a folder and takes its songs out of Songsky. The files are untouched. */
   async removeFolder(name: string): Promise<void> {
     const dir = this.#folders.find((f) => f.name === name);
-    if (!dir) return;
-    await this.#removeTracks((await this.#tracksIn(dir)).map((t) => t.id));
-    await (await db()).delete('folders', name);
-    this.#folders = this.#folders.filter((f) => f !== dir);
-    this.folders = this.folders.filter((f) => f !== name);
+    const ids = new Set(this.tracks.filter((t) => t.folder === name).map((t) => t.id));
+    if (dir) for (const t of await this.#tracksIn(dir)) ids.add(t.id);
+    // Copied songs also have their stored copies deleted.
+    const copies = this.tracks.filter((t) => ids.has(t.id) && t.source === 'copy');
+    await this.#removeTracks([...ids]);
+    const database = await db();
+    for (const t of copies) await database.delete('files', t.id);
+    if (dir) {
+      await database.delete('folders', name);
+      this.#folders = this.#folders.filter((f) => f !== dir);
+      this.folders = this.folders.filter((f) => f !== name);
+    }
   }
 
   async #removeTracks(ids: string[]): Promise<void> {
@@ -224,9 +280,12 @@ class Library {
   async #import(
     items: { file?: File; handle?: FileSystemFileHandle }[],
     folder?: string,
+    { quiet = false } = {},
   ): Promise<void> {
-    toast.clear();
-    this.progress = { done: 0, total: items.length };
+    if (!quiet) {
+      toast.clear();
+      this.progress = { done: 0, total: items.length };
+    }
     const database = await db();
     const results: ReadResult[] = [];
     let copyFailed = false;
@@ -237,6 +296,8 @@ class Library {
       try {
         const file = item.file ?? (await item.handle?.getFile());
         if (!file) continue;
+        // Already in the library: skip before reading tags, so rescans stay quick.
+        if (this.byId.has(trackIdFor(file))) continue;
         const result = await readTrack(file, item.handle ? 'folder' : 'copy', item.handle);
         const { track } = result;
         if (folder) track.folder = folder;
@@ -272,10 +333,14 @@ class Library {
 
     this.tracks = [...this.tracks, ...results.map((r) => r.track)].sort(compareTracks);
     this.progress = null;
+    if (quiet && !results.length && !copyFailed) return;
+    const added = `${results.length} ${results.length === 1 ? 'song' : 'songs'}`;
     toast.show(
       copyFailed
         ? 'Storage is full, so some songs will only play until you close Songsky.'
-        : `Added ${results.length} ${results.length === 1 ? 'song' : 'songs'}.`,
+        : quiet
+          ? `Found ${added} new in ${folder}.`
+          : `Added ${added}.`,
     );
   }
 

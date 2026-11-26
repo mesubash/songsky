@@ -85,7 +85,7 @@ $effect(() => {
     {#if library.visibleTracks.length > 0 || player.current || together.invite}
       <TogetherButton />
     {/if}
-    {#if library.visibleTracks.length > 0 && prefs.localMusic}
+    {#if prefs.localMusic}
       {#if library.canPickFolder}
         <Button icon="folder" aria-label="Add folder" onclick={() => library.addFolder()}>
           <span class="wide-only">Add folder</span>

@@ -30,7 +30,34 @@ export async function* walkDirectory(
   }
 }
 
+/** The browser can keep a folder connected and read it again later (Chrome, Edge). */
 export const canPickFolder = typeof window !== 'undefined' && 'showDirectoryPicker' in window;
+
+/** The browser can at least pick a whole folder once (most desktop browsers; not iOS). */
+export const canChooseFolder =
+  canPickFolder ||
+  (typeof document !== 'undefined' &&
+    'webkitdirectory' in document.createElement('input') &&
+    !isIOS());
+
+/**
+ * Picks a folder with the standard file input, for browsers without folder access (Brave,
+ * Firefox, Safari). Returns its audio files and the folder's name; the songs are copied in.
+ */
+export function pickFolderFiles(): Promise<{ name: string; files: File[] }> {
+  return new Promise((resolve) => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.webkitdirectory = true;
+    input.addEventListener('change', () => {
+      const files = [...(input.files ?? [])];
+      const name = files[0]?.webkitRelativePath.split('/')[0] ?? '';
+      resolve({ name, files: files.filter((f) => isAudioFile(f.name)) });
+    });
+    input.addEventListener('cancel', () => resolve({ name: '', files: [] }));
+    input.click();
+  });
+}
 
 /** Opens the native file picker. Resolves with [] if the user cancels. */
 export function pickFiles(): Promise<File[]> {

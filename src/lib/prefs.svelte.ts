@@ -10,12 +10,14 @@ interface SavedPrefs {
   weatherEffects: boolean;
   sources: Record<MusicSource, boolean>;
   mode: PlayMode;
+  autoRescan: boolean;
 }
 
 const DEFAULTS: SavedPrefs = {
   weatherEffects: true,
   sources: { audius: true, jamendo: true, radio: true },
   mode: 'both',
+  autoRescan: true,
 };
 
 /** Small display preferences, saved on this device. */
@@ -24,6 +26,8 @@ class Prefs {
   weatherEffects = $state(DEFAULTS.weatherEffects);
   sources = $state<Record<MusicSource, boolean>>({ ...DEFAULTS.sources });
   mode = $state<PlayMode>(DEFAULTS.mode);
+  /** Check connected music folders for new songs each time Songsky opens. */
+  autoRescan = $state(DEFAULTS.autoRescan);
 
   /** Online music (Discover, radio) is part of Songsky. */
   get onlineMusic(): boolean {
@@ -39,6 +43,7 @@ class Prefs {
     try {
       const saved: Partial<SavedPrefs> = JSON.parse(localStorage.getItem(KEY) ?? '{}');
       if (typeof saved.weatherEffects === 'boolean') this.weatherEffects = saved.weatherEffects;
+      if (typeof saved.autoRescan === 'boolean') this.autoRescan = saved.autoRescan;
       if (saved.mode === 'both' || saved.mode === 'local' || saved.mode === 'online') {
         this.mode = saved.mode;
       }
@@ -53,6 +58,11 @@ class Prefs {
 
   setWeatherEffects(on: boolean): void {
     this.weatherEffects = on;
+    this.#save();
+  }
+
+  setAutoRescan(on: boolean): void {
+    this.autoRescan = on;
     this.#save();
   }
 
@@ -72,6 +82,7 @@ class Prefs {
         weatherEffects: this.weatherEffects,
         sources: $state.snapshot(this.sources),
         mode: this.mode,
+        autoRescan: this.autoRescan,
       };
       localStorage.setItem(KEY, JSON.stringify(saved));
     } catch {

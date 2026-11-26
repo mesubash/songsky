@@ -6,7 +6,7 @@ import { player } from '$lib/player/player.svelte';
 import { playlists } from '$lib/playlists/playlists.svelte';
 import { prefs } from '$lib/prefs.svelte';
 import { sky } from '$lib/sky/sky.svelte';
-import { playlistHref, type View, view } from '$lib/view.svelte';
+import { libraryHref, playlistHref, type View, view } from '$lib/view.svelte';
 import Cover from './Cover.svelte';
 import Icon, { type IconName } from './Icon.svelte';
 import Logo from './Logo.svelte';
@@ -77,6 +77,52 @@ function playRecent(id: string) {
       {/each}
     </ul>
   </nav>
+
+  {#if prefs.localMusic}
+    <section class="playlists" aria-labelledby="local-title">
+      <div class="section-head">
+        <h2 id="local-title">Local music</h2>
+        {#if library.canChooseFolder}
+          <button
+            class="new"
+            type="button"
+            aria-label="Add a music folder"
+            title="Add a music folder"
+            onclick={() => library.addFolder()}
+          >
+            <Icon name="plus" size={16} />
+          </button>
+        {/if}
+      </div>
+      <ul>
+        <li>
+          <a
+            class="playlist-link"
+            href={libraryHref('local')}
+            aria-current={view.current === 'library' && view.libraryGroup === 'local'
+              ? 'page'
+              : undefined}
+            >All local music</a
+          >
+        </li>
+        {#each library.folderNames as folder (folder)}
+          <li>
+            <a
+              class="playlist-link folder-link"
+              href={libraryHref(`folder:${folder}`)}
+              aria-current={view.current === 'library' && view.libraryGroup === `folder:${folder}`
+                ? 'page'
+                : undefined}
+              ><Icon name="folder" size={14} />{folder}</a
+            >
+          </li>
+        {/each}
+      </ul>
+      {#if !library.folderNames.length}
+        <p class="none">Add a folder with + and Songsky reads the songs in it.</p>
+      {/if}
+    </section>
+  {/if}
 
   <section class="playlists" aria-labelledby="playlists-title">
     <div class="section-head">
@@ -408,5 +454,10 @@ nav a[aria-current="page"] {
   .item-menu {
     opacity: 1;
   }
+}
+.folder-link {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
 }
 </style>
