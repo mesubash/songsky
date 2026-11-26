@@ -2,35 +2,45 @@
 import { discover } from '$lib/discover/discover.svelte';
 import { library } from '$lib/library/library.svelte';
 import { player } from '$lib/player/player.svelte';
+import { sky } from '$lib/sky/sky.svelte';
 import Button from './Button.svelte';
-import TrackList from './TrackList.svelte';
-import TrackSkeleton from './TrackSkeleton.svelte';
+import Cover from './Cover.svelte';
+import Icon from './Icon.svelte';
 
 const PICKS = 6;
 
-// The promise in the headline is real: today's picks load right here, ready to play.
+// The headline's promise is real: today's picks load right here, ready to play.
 $effect(() => {
   void discover.mood.moods;
   void discover.refresh();
 });
 
 const picks = $derived(discover.forSky.slice(0, PICKS));
+const ids = $derived(discover.forSky.map((t) => t.id));
+const skyNow = $derived(
+  sky.weather
+    ? `${sky.weather.label}, ${sky.weather.temperature}° right now`
+    : 'Following the time of day',
+);
 
-function playPicks() {
-  const ids = discover.forSky.map((t) => t.id);
-  if (ids.length) void player.playInOrder(ids);
+function playFrom(index: number) {
+  if (!ids.length) return;
+  if (player.current?.id === ids[index]) void player.toggle();
+  else void player.playList(ids, index);
 }
 </script>
 
 <section class="home" aria-labelledby="empty-title">
   <div class="intro">
+    <p class="now">{skyNow}</p>
     <h2 id="empty-title" class="headline">Music that follows your sky.</h2>
     <p class="lead">
-      Songs picked for your weather right now, free from independent artists. Or bring your own
-      music: your files stay on this device, and your library is here next time.
+      Free songs from independent artists, picked to feel
+      {discover.mood.moods.join(', ').toLowerCase()}. Or bring your own music: it stays on this
+      device.
     </p>
     <div class="actions">
-      <Button variant="primary" icon="play" disabled={!picks.length} onclick={playPicks}>
+      <Button variant="primary" icon="play" disabled={!picks.length} onclick={() => playFrom(0)}>
         Play songs for your sky
       </Button>
       {#if library.canPickFolder}
@@ -40,41 +50,77 @@ function playPicks() {
         {library.canPickFolder ? 'Choose files' : 'Choose your songs'}
       </Button>
     </div>
-    <p class="hint">You can also drop audio files anywhere on this page.</p>
   </div>
 
-  <section class="picks" aria-labelledby="picks-title">
-    <div class="picks-head">
-      <div>
-        <h3 id="picks-title">{discover.mood.title}</h3>
-        <p class="hint">
-          Feels {discover.mood.moods.join(', ').toLowerCase()}. Changes with your sky.
-        </p>
-      </div>
-      <a class="more" href="#discover">See all</a>
+  <section class="shelf" aria-labelledby="shelf-title">
+    <div class="shelf-head">
+      <h3 id="shelf-title">{discover.mood.title}</h3>
+      <a href="#discover">See all in Discover</a>
     </div>
-    {#if picks.length}
-      <TrackList tracks={picks} compact />
-    {:else if discover.skyStatus === 'error'}
+
+    <ol class="cards" aria-busy={!picks.length}>
+      {#if picks.length}
+        {#each picks as track, i (track.id)}
+          {@const isCurrent = player.current?.id === track.id}
+          <li>
+            <button
+              class="card"
+              class:current={isCurrent}
+              type="button"
+              aria-label="{isCurrent && player.playing
+                ? 'Pause'
+                : 'Play'} {track.title} by {track.artist}"
+              onclick={() => playFrom(i)}
+            >
+              <span class="art">
+                <Cover coverId={track.coverId} artworkUrl={track.artworkUrl} size={240} fluid />
+                <span class="badge" aria-hidden="true">
+                  {#if isCurrent && player.playing}
+                    <span class="bars"><i></i><i></i><i></i></span>
+                  {:else}
+                    <Icon name="play" size={20} />
+                  {/if}
+                </span>
+              </span>
+              <span class="title">{track.title}</span>
+              <span class="artist">{track.artist}</span>
+            </button>
+          </li>
+        {/each}
+      {:else}
+        {#each Array.from({ length: PICKS }, (_, i) => i) as i (i)}
+          <li class="placeholder" aria-hidden="true">
+            <span class="ph-art"></span>
+            <span class="ph-line"></span>
+            <span class="ph-line short"></span>
+          </li>
+        {/each}
+      {/if}
+    </ol>
+    {#if discover.skyStatus === 'error' && !picks.length}
       <p class="hint">Couldn’t reach the free music library. Check your connection.</p>
-    {:else}
-      <TrackSkeleton rows={PICKS} label="Finding songs for your sky" />
     {/if}
   </section>
+
+  <p class="hint">You can also drop audio files anywhere on this page.</p>
 </section>
 
 <style>
 .home {
   display: grid;
   gap: var(--space-12);
-  padding-block: clamp(var(--space-8), 8vh, 6rem) var(--space-8);
+  padding-block: clamp(var(--space-8), 9vh, 7rem) var(--space-8);
 }
 
 .intro {
   display: grid;
-  align-content: start;
-  gap: var(--space-6);
-  max-width: 34rem;
+  gap: var(--space-4);
+  max-width: 42rem;
+}
+
+.now {
+  color: var(--text-muted);
+  font-weight: 550;
 }
 
 .headline {
@@ -83,7 +129,7 @@ function playPicks() {
 }
 
 .lead {
-  max-width: 30rem;
+  max-width: 34rem;
   color: var(--text-muted);
   font-size: var(--text-lg);
 }
@@ -92,6 +138,7 @@ function playPicks() {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-3);
+  padding-top: var(--space-2);
 }
 
 .hint {
@@ -99,23 +146,17 @@ function playPicks() {
   font-size: var(--text-sm);
 }
 
-.picks {
+.shelf {
   display: grid;
-  align-content: start;
-  gap: var(--space-3);
+  gap: var(--space-4);
   min-width: 0;
-  padding: var(--space-4);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-lg);
-  background: var(--surface);
 }
 
-.picks-head {
+.shelf-head {
   display: flex;
-  align-items: flex-start;
+  align-items: baseline;
   justify-content: space-between;
   gap: var(--space-4);
-  padding: var(--space-2) var(--space-3) 0;
 }
 
 h3 {
@@ -123,19 +164,181 @@ h3 {
   letter-spacing: -0.02em;
 }
 
-.more {
-  flex: none;
+.shelf-head a {
   color: var(--text);
+  font-size: var(--text-sm);
   font-weight: 600;
   text-underline-offset: 3px;
 }
 
-/* Wide screens: the promise on the left, the songs on the right. */
-@media (min-width: 960px) {
-  .home {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
-    align-items: center;
-    min-height: min(78vh, 720px);
+/* The covers stand on a thin horizon line, the same motif as the logo. */
+.cards {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(9.5rem, 1fr);
+  gap: clamp(var(--space-3), 2vw, var(--space-6));
+  margin: 0;
+  padding: 0 0 var(--space-6);
+  border-bottom: 1px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  list-style: none;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+}
+
+.cards::-webkit-scrollbar {
+  display: none;
+}
+
+.cards li {
+  scroll-snap-align: start;
+  min-width: 0;
+}
+
+.card {
+  display: grid;
+  gap: var(--space-1);
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  text-align: start;
+}
+
+.art {
+  position: relative;
+  display: block;
+  margin-bottom: var(--space-2);
+  border-radius: var(--radius-md);
+  box-shadow: 0 18px 40px -22px rgb(0 0 0 / 0.6);
+  transition: transform 220ms var(--ease-out);
+}
+
+.art :global(.cover) {
+  border-radius: var(--radius-md);
+}
+
+.card:hover .art,
+.card:focus-visible .art {
+  transform: translateY(-4px);
+}
+
+.badge {
+  position: absolute;
+  right: var(--space-2);
+  bottom: var(--space-2);
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--on-accent);
+  opacity: 0;
+  transform: translateY(6px);
+  transition:
+    opacity var(--duration-fast) var(--ease-out),
+    transform var(--duration-fast) var(--ease-out);
+}
+
+.card:hover .badge,
+.card:focus-visible .badge,
+.card.current .badge {
+  opacity: 1;
+  transform: none;
+}
+
+.title,
+.artist {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.title {
+  font-weight: 600;
+}
+
+.card.current .title {
+  color: var(--accent);
+}
+
+.artist {
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}
+
+.bars {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 16px;
+}
+
+.bars i {
+  width: 3px;
+  height: 100%;
+  border-radius: 1px;
+  background: currentColor;
+  transform-origin: bottom;
+  animation: bounce 900ms ease-in-out infinite alternate;
+}
+
+.bars i:nth-child(2) {
+  animation-delay: -300ms;
+}
+
+.bars i:nth-child(3) {
+  animation-delay: -600ms;
+}
+
+.placeholder {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.ph-art,
+.ph-line {
+  background: var(--surface-strong);
+  box-shadow: none;
+  animation: pulse 1.4s ease-in-out infinite alternate;
+}
+
+.ph-art {
+  aspect-ratio: 1;
+  margin-bottom: var(--space-2);
+  border-radius: var(--radius-md);
+}
+
+.ph-line {
+  height: 10px;
+  width: 80%;
+  border-radius: var(--radius-full);
+}
+
+.ph-line.short {
+  width: 50%;
+}
+
+/* Narrow screens: the shelf scrolls sideways, about two and a half covers at a time. */
+@media (max-width: 720px) {
+  .cards {
+    grid-auto-columns: 42%;
+    margin-inline: calc(var(--gutter) * -1);
+    padding-inline: var(--gutter);
+    scroll-padding-inline: var(--gutter);
+  }
+}
+
+@keyframes bounce {
+  from {
+    transform: scaleY(0.25);
+  }
+}
+
+@keyframes pulse {
+  from {
+    opacity: 0.45;
   }
 }
 </style>
