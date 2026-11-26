@@ -177,8 +177,14 @@ h3 {
   grid-auto-flow: column;
   --gap: clamp(var(--space-3), 2vw, var(--space-6));
 
-  /* Six covers across, but never taller than a fifth of the window. */
-  grid-auto-columns: max(8rem, min(calc((100% - 5 * var(--gap)) / 6), 20vh));
+  /* Six covers across, but only as tall as the room left in the window: the window
+     height minus everything else on this screen (header, intro, titles, player bar). */
+  --chrome: 690px;
+
+  grid-auto-columns: max(
+    7rem,
+    min(calc((100% - 5 * var(--gap)) / 6), calc(100dvh - var(--chrome)))
+  );
   justify-content: space-between;
   gap: var(--gap);
   margin: 0;
@@ -322,6 +328,34 @@ h3 {
 
 .ph-line.short {
   width: 50%;
+}
+
+/* The player bar takes about 80px more. */
+:global(.has-player) .cards {
+  --chrome: 770px;
+}
+
+/* Short windows (most laptops): a smaller headline and intro, so the screen still fits. */
+@media (min-width: 721px) and (max-height: 860px) {
+  .intro {
+    gap: var(--space-3);
+  }
+
+  .headline {
+    font-size: var(--text-2xl);
+  }
+
+  .lead {
+    font-size: var(--text-base);
+  }
+
+  .cards {
+    --chrome: 560px;
+  }
+
+  :global(.has-player) .cards {
+    --chrome: 640px;
+  }
 }
 
 /* Narrow screens: the shelf scrolls sideways, about two and a half covers at a time. */

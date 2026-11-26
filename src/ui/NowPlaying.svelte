@@ -129,7 +129,7 @@ const upNext = $derived(
           {#key track.id}
             <div class="info" in:slide={{ delay: 60, distance: 40 }}>
               <div class="title-row">
-                <h2 class="title">{track.title}</h2>
+                <h2 class="title" title={track.title}>{track.title}</h2>
                 {#if track.source === 'stream'}
                   <HeartButton {track} size={26} />
                 {/if}
@@ -144,16 +144,15 @@ const upNext = $derived(
                   {track.artist}{track.album ? `, ${track.album}` : ''}
                 {/if}
               </p>
-              {#if track.bpm || track.key}
-                <p class="facts">
-                  {#if track.bpm}
-                    <span class="fact">{track.bpm} BPM</span>
-                  {/if}
-                  {#if track.key}
-                    <span class="fact" title="Camelot {track.camelot}">{track.key}</span>
-                  {/if}
-                </p>
-              {/if}
+              <!-- Always present (even empty) so the controls below never move. -->
+              <p class="facts">
+                {#if track.bpm}
+                  <span class="fact">{track.bpm} BPM</span>
+                {/if}
+                {#if track.key}
+                  <span class="fact" title="Camelot {track.camelot}">{track.key}</span>
+                {/if}
+              </p>
             </div>
           {/key}
 
@@ -162,29 +161,31 @@ const upNext = $derived(
             <Controls large />
           </div>
 
-          {#if upNext.length}
-            <section class="up-next" aria-labelledby="up-next-title">
-              <h3 id="up-next-title">Up next</h3>
-              <ol>
-                {#each upNext as { index, track: next } (next?.id)}
-                  {#if next}
-                    <li>
-                      <button type="button" onclick={() => player.jumpTo(index)}>
-                        <Cover coverId={next.coverId} artworkUrl={next.artworkUrl} size={40} />
-                        <span class="next-text">
-                          <span class="next-title">{next.title}</span>
-                          <span class="next-artist">{next.artist}</span>
-                        </span>
-                        <span class="next-time"
-                          >{next.duration ? formatTime(next.duration) : ''}</span
-                        >
-                      </button>
-                    </li>
-                  {/if}
-                {/each}
-              </ol>
-            </section>
-          {/if}
+          <section class="up-next" aria-labelledby="up-next-title">
+            <h3 id="up-next-title">Up next</h3>
+            <ol>
+              {#each upNext as { index, track: next } (next?.id)}
+                {#if next}
+                  <li>
+                    <button type="button" onclick={() => player.jumpTo(index)}>
+                      <Cover coverId={next.coverId} artworkUrl={next.artworkUrl} size={40} />
+                      <span class="next-text">
+                        <span class="next-title">{next.title}</span>
+                        <span class="next-artist">{next.artist}</span>
+                      </span>
+                      <span class="next-time"
+                        >{next.duration ? formatTime(next.duration) : ''}</span
+                      >
+                    </button>
+                  </li>
+                {/if}
+              {:else}
+                <li class="queue-end">
+                  This is the last song. Pick more from your library or Discover.
+                </li>
+              {/each}
+            </ol>
+          </section>
         </div>
       </div>
 
@@ -199,6 +200,12 @@ const upNext = $derived(
 </dialog>
 
 <style>
+/* While the player covers the screen, the page behind it can't scroll, so its
+   scrollbar doesn't show beside the player. */
+:global(html:has(.now-playing[open])) {
+  overflow: hidden;
+}
+
 .now-playing {
   width: 100%;
   max-width: none;
@@ -288,24 +295,39 @@ header {
 
 .title-row {
   display: flex;
-  align-items: flex-start;
+  align-items: flex-end;
+  height: 2lh;
+  font-size: var(--text-xl);
+  line-height: 1.2;
   justify-content: space-between;
   gap: var(--space-3);
 }
 
 /* Line the heart up with the first line of the title. */
 .title-row :global(.heart) {
+  align-self: flex-start;
   margin-top: -6px;
   margin-inline-end: calc(var(--space-3) * -1);
 }
 
+/* Song changes must not move the controls: the title gets a fixed height (cut off
+   with an ellipsis past it), the artist one line, and the facts row its own space. */
 .title {
-  font-size: var(--text-xl);
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  font-size: inherit;
+  line-height: inherit;
   letter-spacing: -0.02em;
 }
 
 .artist {
+  overflow: hidden;
   color: var(--text-muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .artist a {
@@ -319,6 +341,7 @@ header {
 
 .facts {
   display: flex;
+  min-height: calc(28px + var(--space-2));
   flex-wrap: wrap;
   gap: var(--space-2);
   padding-top: var(--space-2);
@@ -382,8 +405,15 @@ header {
     max-width: 34rem;
   }
 
-  .title {
+  .title-row {
+    height: 3lh;
     font-size: clamp(2rem, 3.2vw, 3.25rem);
+    line-height: 1.05;
+  }
+
+  .title {
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
     line-height: 1.05;
     letter-spacing: -0.03em;
   }
@@ -414,7 +444,9 @@ header {
     font-weight: 600;
   }
 
+  /* Room for five songs even when fewer are left, so nothing shifts at the end. */
   .up-next ol {
+    min-height: calc(5 * 56px + 4 * var(--space-1));
     display: grid;
     gap: var(--space-1);
     margin: 0;
@@ -456,7 +488,8 @@ header {
   }
 
   .next-artist,
-  .next-time {
+  .next-time,
+  .queue-end {
     color: var(--text-muted);
     font-size: var(--text-sm);
     font-variant-numeric: tabular-nums;
