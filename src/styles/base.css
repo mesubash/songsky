@@ -111,6 +111,19 @@ button {
   outline-offset: 2px;
 }
 
+/* Desktop shows the page title in the top bar, so in-page titles hide there but stay
+   available to screen readers. */
+@media (min-width: 1100px) {
+  .desktop-title {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}
+
 .visually-hidden {
   position: absolute;
   width: 1px;

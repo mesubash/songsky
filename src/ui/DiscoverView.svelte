@@ -24,7 +24,7 @@ function playAll(ids: string[], shuffle = false) {
 
 <section aria-labelledby="discover-title">
   <div class="head">
-    <div>
+    <div class="desktop-title">
       <h2 id="discover-title" class="title">Discover</h2>
       <p class="meta">Free music from independent artists on Audius.</p>
     </div>
@@ -154,10 +154,14 @@ h3 {
   color: var(--text);
 }
 
-/* Desktop has search in the header, so the page's own box only shows on smaller screens. */
-@media (min-width: 960px) {
+/* Desktop has the title and search in the top bar, so this row shrinks away there. */
+@media (min-width: 1100px) {
   .page-search {
     display: none;
+  }
+
+  .head {
+    padding-block: 0;
   }
 }
 </style>

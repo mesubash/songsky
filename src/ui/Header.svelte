@@ -1,12 +1,43 @@
 <script lang="ts">
+import { analyzer } from '$lib/analysis/analyzer.svelte';
+import { formatLength } from '$lib/format';
 import { library } from '$lib/library/library.svelte';
+import { memory } from '$lib/memory/memory.svelte';
 import { player } from '$lib/player/player.svelte';
 import { together } from '$lib/together/together.svelte';
+import { view } from '$lib/view.svelte';
 import Button from './Button.svelte';
+import LibraryActions from './LibraryActions.svelte';
 import Logo from './Logo.svelte';
+import RememberSwitch from './RememberSwitch.svelte';
 import SearchBox from './SearchBox.svelte';
 import SkyControl from './SkyControl.svelte';
 import TogetherButton from './TogetherButton.svelte';
+
+const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
+
+/** The page you are on, shown in the top bar on desktop. Null on the first screen. */
+const page = $derived.by((): { title: string; subtitle: string } | null => {
+  if (view.current === 'discover') {
+    return { title: 'Discover', subtitle: 'Free music from independent artists on Audius' };
+  }
+  if (view.current === 'memories') {
+    const places = memory.places.length;
+    return {
+      title: 'Memories',
+      subtitle: memory.plays.length
+        ? `${plural(memory.plays.length, 'play')}${places ? ` in ${plural(places, 'place')}` : ''}`
+        : 'Songs you play show up here',
+    };
+  }
+  const count = library.tracks.length;
+  if (!count) return null;
+  const length = library.totalDuration ? `, ${formatLength(library.totalDuration)}` : '';
+  const reading = analyzer.progress
+    ? `. Reading tempo and key: ${analyzer.progress.done} of ${analyzer.progress.total}`
+    : '';
+  return { title: 'Library', subtitle: `${plural(count, 'song')}${length}${reading}` };
+});
 
 /** See-through at the top of the page; a soft band appears once content scrolls under it. */
 let scrolled = $state(false);
@@ -26,7 +57,22 @@ $effect(() => {
     <Logo size={34} />songsky<span class="visually-hidden"> music player</span>
   </h1>
 
-  <div class="header-search"><SearchBox id="header-search" /></div>
+  {#if page}
+    <!-- The page's own heading is in the page for screen readers; this is the visible copy. -->
+    <div class="page" aria-hidden="true">
+      <span class="page-title">{page.title}</span>
+      <span class="page-subtitle">{page.subtitle}</span>
+    </div>
+  {/if}
+
+  <!-- Each page's own controls (desktop). Phones show them in the page instead. -->
+  {#if view.current === 'discover'}
+    <div class="header-search"><SearchBox id="header-search" /></div>
+  {:else if view.current === 'memories'}
+    <div class="page-controls"><RememberSwitch /></div>
+  {:else if library.tracks.length}
+    <div class="page-controls"><LibraryActions /></div>
+  {/if}
 
   <div class="actions">
     <SkyControl />
@@ -73,9 +119,36 @@ $effect(() => {
   -webkit-backdrop-filter: blur(20px) saturate(1.4);
 }
 
-.header-search {
+.page,
+.header-search,
+.page-controls {
   display: none;
-  flex: 1;
+}
+
+.page {
+  flex-direction: column;
+  min-width: 0;
+  margin-right: auto;
+}
+
+.page-title {
+  font-family: var(--font-display);
+  font-size: var(--text-xl);
+  font-weight: var(--display-weight);
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+
+.page-subtitle {
+  overflow: hidden;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.header-search {
+  flex: 0 1 24rem;
 }
 
 .wordmark {
@@ -119,8 +192,13 @@ $effect(() => {
   }
 }
 
-@media (min-width: 960px) {
-  .header-search {
+@media (min-width: 1100px) {
+  .page {
+    display: flex;
+  }
+
+  .header-search,
+  .page-controls {
     display: block;
   }
 }

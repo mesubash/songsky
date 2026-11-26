@@ -1,23 +1,13 @@
 <script lang="ts">
 import { analyzer } from '$lib/analysis/analyzer.svelte';
-import { mixOrder } from '$lib/analysis/mix';
 import { formatLength } from '$lib/format';
 import { library } from '$lib/library/library.svelte';
 import { memory } from '$lib/memory/memory.svelte';
 import { player } from '$lib/player/player.svelte';
-import Button from './Button.svelte';
-import PaceButton from './PaceButton.svelte';
+import LibraryActions from './LibraryActions.svelte';
 import TrackList from './TrackList.svelte';
 
-const ids = $derived(library.tracks.map((t) => t.id));
 const count = $derived(library.tracks.length);
-
-/** A mix starting from the playing song, or a random one. */
-function playMix() {
-  const tracks = library.tracks;
-  const start = player.current?.id ?? tracks[Math.floor(Math.random() * tracks.length)]?.id ?? '';
-  void player.playInOrder(mixOrder(tracks, start));
-}
 
 function clearLibrary() {
   if (confirm('Remove all songs from Songsky? Your files on this device are not deleted.')) {
@@ -30,7 +20,7 @@ function clearLibrary() {
 
 <section aria-labelledby="library-title">
   <div class="head">
-    <div>
+    <div class="desktop-title">
       <h2 id="library-title" class="title">Library</h2>
       <p class="meta">
         {count}
@@ -45,15 +35,7 @@ function clearLibrary() {
       {/if}
     </div>
     <div class="actions">
-      <Button variant="primary" icon="play" onclick={() => player.playList(ids)}>Play</Button>
-      <Button icon="shuffle" onclick={() => player.shuffleAll(ids)}>Shuffle</Button>
-      <Button
-        icon="disc"
-        title="Play songs in an order that flows: close tempo and matching keys"
-        onclick={playMix}
-        >Mix</Button
-      >
-      <PaceButton />
+      <div class="page-control"><LibraryActions /></div>
       <button class="clear" type="button" onclick={clearLibrary}>Clear library</button>
     </div>
   </div>
@@ -100,5 +82,19 @@ function clearLibrary() {
 
 .clear:hover {
   color: var(--text);
+}
+
+/* Desktop shows the title in the top bar, so this row holds only the actions. */
+@media (min-width: 1100px) {
+  .head {
+    justify-content: flex-end;
+    padding-block: var(--space-4);
+  }
+}
+
+@media (min-width: 1100px) {
+  .page-control {
+    display: none;
+  }
 }
 </style>

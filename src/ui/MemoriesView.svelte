@@ -5,6 +5,7 @@ import { timeAgo } from '$lib/memory/places';
 import { player } from '$lib/player/player.svelte';
 import { sky } from '$lib/sky/sky.svelte';
 import MemoryMap from './MemoryMap.svelte';
+import RememberSwitch from './RememberSwitch.svelte';
 
 const RECENT = 30;
 
@@ -20,7 +21,7 @@ function startTrack(trackId: string) {
 
 <section aria-labelledby="memories-title">
   <div class="head">
-    <div>
+    <div class="desktop-title">
       <h2 id="memories-title" class="title">Memories</h2>
       <p class="meta">
         {#if memory.plays.length === 0}
@@ -32,16 +33,7 @@ function startTrack(trackId: string) {
         {/if}
       </p>
     </div>
-    <label class="switch">
-      <input
-        type="checkbox"
-        role="switch"
-        aria-checked={memory.rememberPlaces}
-        checked={memory.rememberPlaces}
-        onchange={(e) => memory.setRememberPlaces(e.currentTarget.checked)}
-      >
-      <span>Remember where I listen</span>
-    </label>
+    <div class="page-control"><RememberSwitch /></div>
   </div>
 
   {#if memory.rememberPlaces && !sky.place}
@@ -113,45 +105,6 @@ function startTrack(trackId: string) {
   margin-bottom: var(--space-4);
 }
 
-.switch {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-3);
-  min-height: 44px;
-  cursor: pointer;
-}
-
-.switch input {
-  width: 44px;
-  height: 26px;
-  margin: 0;
-  border-radius: var(--radius-full);
-  background: var(--line);
-  appearance: none;
-  cursor: pointer;
-  transition: background-color var(--duration-fast) var(--ease-out);
-}
-
-.switch input::before {
-  content: "";
-  display: block;
-  width: 20px;
-  height: 20px;
-  margin: 3px;
-  border-radius: 50%;
-  background: var(--text);
-  transition: transform var(--duration-fast) var(--ease-out);
-}
-
-.switch input:checked {
-  background: var(--accent);
-}
-
-.switch input:checked::before {
-  background: var(--on-accent);
-  transform: translateX(18px);
-}
-
 .subtitle {
   padding-block: var(--space-8) var(--space-2);
   font-size: var(--text-lg);
@@ -208,5 +161,20 @@ function startTrack(trackId: string) {
 
 .when {
   flex: none;
+}
+
+/* Desktop shows the title in the top bar, so this row holds only the actions. */
+@media (min-width: 1100px) {
+  .head {
+    justify-content: flex-end;
+    padding-block: var(--space-4);
+  }
+}
+
+/* Desktop: the switch lives in the top bar. */
+@media (min-width: 1100px) {
+  .page-control {
+    display: none;
+  }
 }
 </style>
