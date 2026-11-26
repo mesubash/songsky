@@ -1,4 +1,5 @@
 import { bandRanges, readBands } from '$lib/audio/spectrum';
+import type { Track } from '$lib/library/types';
 import { player } from '$lib/player/player.svelte';
 import { sky } from '$lib/sky/sky.svelte';
 import { toast } from '$lib/toast.svelte';
@@ -36,15 +37,8 @@ function fileName(title: string): string {
   return `${slug || 'song'}-songsky.png`;
 }
 
-/** Phones get the share sheet; computers download the picture. */
-const prefersShare = () => matchMedia('(pointer: coarse)').matches;
-
-export const canShareArt = (): boolean => prefersShare() && 'share' in navigator;
-
-export async function shareSongArt(): Promise<void> {
-  const track = player.current;
-  if (!track) return;
-
+/** Draws the song art for a track as a PNG file, using the current sky. */
+export async function createSongArt(track: Track): Promise<File> {
   const root = getComputedStyle(document.documentElement);
   const read = (name: string) => root.getPropertyValue(name).trim();
   const blob = await renderSongArt({
@@ -62,17 +56,26 @@ export async function shareSongArt(): Promise<void> {
     displayFont: read('--font-display'),
     textFont: read('--font-sans'),
   });
+  return new File([blob], fileName(track.title), { type: 'image/png' });
+}
 
-  const file = new File([blob], fileName(track.title), { type: 'image/png' });
-  if (prefersShare() && navigator.canShare?.({ files: [file] })) {
-    try {
-      await navigator.share({ files: [file], title: track.title });
-    } catch (error) {
-      if (!(error instanceof DOMException && error.name === 'AbortError')) throw error;
-    }
-    return;
+/** Whether this browser can hand an image to the system share menu. */
+export function canShareFile(file: File): boolean {
+  return typeof navigator.canShare === 'function' && navigator.canShare({ files: [file] });
+}
+
+/** Opens the system share menu. Returns false if the person closed it without sharing. */
+export async function shareFile(file: File, title: string): Promise<boolean> {
+  try {
+    await navigator.share({ files: [file], title });
+    return true;
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'AbortError') return false;
+    throw error;
   }
+}
 
+export function downloadFile(file: File): void {
   const url = URL.createObjectURL(file);
   const link = document.createElement('a');
   link.href = url;

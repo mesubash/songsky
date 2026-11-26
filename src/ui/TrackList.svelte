@@ -4,6 +4,7 @@ import { library } from '$lib/library/library.svelte';
 import type { Track } from '$lib/library/types';
 import { player } from '$lib/player/player.svelte';
 import Cover from './Cover.svelte';
+import HeartButton from './HeartButton.svelte';
 import Icon from './Icon.svelte';
 
 let {
@@ -59,20 +60,7 @@ const hasStreams = $derived(tracks.some((t) => t.source === 'stream'));
       {#if hasStreams}
         <span class="actions">
           {#if track.source === 'stream'}
-            {@const saved = library.isSaved(track.id)}
-            <button
-              class="action"
-              class:on={saved}
-              type="button"
-              aria-pressed={saved}
-              aria-label={saved
-                ? `Remove ${track.title} from your library`
-                : `Save ${track.title} to your library`}
-              title={saved ? 'Saved to your library' : 'Save to your library'}
-              onclick={() => (saved ? library.remove(track.id) : library.save(track))}
-            >
-              <Icon name="heart" size={18} />
-            </button>
+            <HeartButton {track} />
             {#if track.link}
               <a
                 class="action link"
@@ -226,14 +214,6 @@ li {
 .action:hover {
   background: var(--surface);
   color: var(--text);
-}
-
-.action.on {
-  color: var(--accent);
-}
-
-.action.on :global(path) {
-  fill: currentColor;
 }
 
 /* Hovering a row swaps its number for a play icon, so it is clear the row plays. */

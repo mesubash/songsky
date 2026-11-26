@@ -1,5 +1,6 @@
 <script lang="ts">
 import { player } from '$lib/player/player.svelte';
+import { toast } from '$lib/toast.svelte';
 import Button from './Button.svelte';
 import Icon from './Icon.svelte';
 
@@ -18,7 +19,10 @@ const repeatLabel = $derived(
     active={player.shuffle}
     aria-pressed={player.shuffle}
     aria-label="Shuffle"
-    onclick={() => player.toggleShuffle()}
+    onclick={() => {
+      player.toggleShuffle();
+      toast.show(player.shuffle ? 'Shuffle on' : 'Shuffle off');
+    }}
   />
   <Button
     variant="icon"
@@ -51,7 +55,12 @@ const repeatLabel = $derived(
     active={player.repeat !== 'off'}
     aria-label={repeatLabel}
     title={repeatLabel}
-    onclick={() => player.cycleRepeat()}
+    onclick={() => {
+      player.cycleRepeat();
+      toast.show(
+        { off: 'Repeat off', all: 'Repeat: all songs', one: 'Repeat: this song' }[player.repeat],
+      );
+    }}
   />
 </div>
 

@@ -70,6 +70,7 @@ const ICONS = {
     fill: false,
   },
   send: { d: 'M4 12 20 4l-6 16-3-7zM11 13l9-9', fill: false },
+  download: { d: 'M12 4v11M7 10l5 5 5-5M5 20h14', fill: false },
   copy: { d: 'M9 9h11v11H9zM5 15H4V4h11v1', fill: false },
   heart: {
     d: 'M12 20s-7-4.4-9.2-8.7C1.3 8.4 3 5 6.4 5c2 0 3.4 1.1 4.1 2.3h3c.7-1.2 2.1-2.3 4.1-2.3C21 5 22.7 8.4 21.2 11.3 19 15.6 12 20 12 20z',

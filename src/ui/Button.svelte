@@ -93,7 +93,23 @@ let {
   color: var(--on-accent);
 }
 
+/* Toggles that are on (shuffle, repeat) get a tinted circle and a dot, so the state is
+   obvious in every sky, not just a colour change. */
 .icon.active {
+  position: relative;
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
   color: var(--accent);
+}
+
+.icon.active::after {
+  content: "";
+  position: absolute;
+  bottom: 5px;
+  left: 50%;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: currentColor;
+  transform: translateX(-50%);
 }
 </style>

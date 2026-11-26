@@ -1,22 +1,20 @@
 <script lang="ts">
-import { canShareArt, shareSongArt } from '$lib/art/art.svelte';
 import { formatTime } from '$lib/format';
 import { library } from '$lib/library/library.svelte';
 import { player } from '$lib/player/player.svelte';
-import { toast } from '$lib/toast.svelte';
 import Button from './Button.svelte';
 import Controls from './Controls.svelte';
 import Cover from './Cover.svelte';
 import { modal } from './modal';
 import SeekBar from './SeekBar.svelte';
+import SongArtSheet from './SongArtSheet.svelte';
 import Visualizer from './Visualizer.svelte';
 
 let { open = $bindable(false), onsound }: { open?: boolean; onsound: () => void } = $props();
 
 const UP_NEXT = 5;
 
-let making = $state(false);
-const artLabel = canShareArt() ? 'Share song art' : 'Save song art';
+let artOpen = $state(false);
 
 /** The next few songs in the queue, with their queue positions so they can be jumped to. */
 const upNext = $derived(
@@ -25,17 +23,6 @@ const upNext = $derived(
     .map((id, i) => ({ index: player.index + 1 + i, track: library.byId.get(id) }))
     .filter((entry) => entry.track !== undefined),
 );
-
-async function makeArt() {
-  making = true;
-  try {
-    await shareSongArt();
-  } catch {
-    toast.show('Couldn’t make the song art. Try again.');
-  } finally {
-    making = false;
-  }
-}
 </script>
 
 <!-- Native dialog: focus is trapped and Escape closes it. -->
@@ -63,10 +50,9 @@ async function makeArt() {
           variant="icon"
           icon="share"
           iconSize={22}
-          aria-label={artLabel}
-          title={artLabel}
-          disabled={making}
-          onclick={makeArt}
+          aria-label="Song art: share or save a picture of this song"
+          title="Song art"
+          onclick={() => (artOpen = true)}
         />
         <Button
           variant="icon"
@@ -145,6 +131,7 @@ async function makeArt() {
       </div>
     </div>
   {/if}
+  <SongArtSheet bind:open={artOpen} track={player.current} />
 </dialog>
 
 <style>
