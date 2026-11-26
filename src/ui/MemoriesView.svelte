@@ -1,7 +1,7 @@
 <script lang="ts">
 import { library } from '$lib/library/library.svelte';
 import { memory } from '$lib/memory/memory.svelte';
-import { groupByDay, timeAgo } from '$lib/memory/places';
+import { collapseRepeats, groupByDay, timeAgo } from '$lib/memory/places';
 import { player } from '$lib/player/player.svelte';
 import { sky } from '$lib/sky/sky.svelte';
 import Button from './Button.svelte';
@@ -13,16 +13,17 @@ import RememberSwitch from './RememberSwitch.svelte';
 const RECENT = 40;
 
 // Only plays we can still show and replay (older entries of unsaved streams are skipped).
+// Repeat plays of the same song in a row fold into one row with a count.
 const days = $derived(
-  groupByDay(memory.plays.filter((play) => library.byId.has(play.trackId)).slice(0, RECENT)),
+  groupByDay(
+    collapseRepeats(memory.plays.filter((play) => library.byId.has(play.trackId))).slice(0, RECENT),
+  ),
 );
 const placeCount = $derived(memory.places.length);
 const ids = $derived(library.tracks.map((t) => t.id));
 
 /** Which friendly card to show above the map, if any. */
-const tip = $derived(
-  !memory.rememberPlaces ? 'off' : !sky.place ? 'no-place' : placeCount === 0 ? 'waiting' : null,
-);
+const tip = $derived(!memory.rememberPlaces ? 'off' : !sky.place ? 'no-place' : null);
 
 function startTrack(trackId: string) {
   const index = ids.indexOf(trackId);
@@ -60,9 +61,6 @@ const timeOfDay = (t: number) =>
         {:else if tip === 'no-place'}
           <h3>Where are you listening?</h3>
           <p>Share your location or pick a city so Songsky knows where to pin your songs.</p>
-        {:else}
-          <h3>You’re all set</h3>
-          <p>Play a song and it will appear on the map, pinned to {sky.place?.name}.</p>
         {/if}
       </div>
       <div class="tip-actions">
@@ -112,7 +110,13 @@ const timeOfDay = (t: number) =>
                   <span class="main">
                     <span class="name">{track?.title ?? 'Song no longer available'}</span>
                     <span class="sub"
-                      >{track?.artist ?? ''}{entry.place ? `, ${entry.place.name}` : ''}</span
+                      >{[
+                        track?.artist,
+                        entry.place?.name,
+                        entry.times > 1 ? `played ${entry.times} times` : '',
+                      ]
+                        .filter(Boolean)
+                        .join(', ')}</span
                     >
                   </span>
                   <span class="when">

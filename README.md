@@ -53,7 +53,7 @@ On iPhone and iPad the browser stops Web Audio when the screen locks, so Songsky
 - Your music files never leave your device. There is no account and no server.
 - Discover streams songs from Audius; Songsky sends Audius only the search or mood being looked up.
 - Listen together sends songs straight from the host's device to the listeners over an encrypted peer-to-peer connection.
-- The weather lookup sends a location rounded to about 10 km to [Open-Meteo](https://open-meteo.com). Map tiles come from [OpenStreetMap](https://www.openstreetmap.org).
+- The weather lookup sends a location rounded to about 10 km to [Open-Meteo](https://open-meteo.com), and the same rounded location to [BigDataCloud](https://www.bigdatacloud.com) to name your town. Map tiles come from [OpenStreetMap](https://www.openstreetmap.org).
 
 ## Run it locally
 

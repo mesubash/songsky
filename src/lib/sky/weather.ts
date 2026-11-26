@@ -52,6 +52,26 @@ export function formatCoordinates(latitude: number, longitude: number): string {
   return `${lat}, ${lon}`;
 }
 
+/** A readable name ("Kathmandu, Nepal") for rounded coordinates, or null if the lookup fails. */
+export async function placeName(latitude: number, longitude: number): Promise<string | null> {
+  const params = new URLSearchParams({
+    latitude: String(roundCoordinate(latitude)),
+    longitude: String(roundCoordinate(longitude)),
+    localityLanguage: 'en',
+  });
+  try {
+    const response = await fetch(
+      `https://api.bigdatacloud.net/data/reverse-geocode-client?${params}`,
+    );
+    if (!response.ok) return null;
+    const data: { city?: string; locality?: string; countryName?: string } = await response.json();
+    const town = data.city || data.locality;
+    return town ? [town, data.countryName].filter(Boolean).join(', ') : null;
+  } catch {
+    return null;
+  }
+}
+
 export function forecastUrl(place: Pick<Place, 'latitude' | 'longitude'>): string {
   const params = new URLSearchParams({
     latitude: String(roundCoordinate(place.latitude)),

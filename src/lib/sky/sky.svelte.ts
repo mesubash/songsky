@@ -4,6 +4,7 @@ import {
   fetchWeather,
   formatCoordinates,
   type Place,
+  placeName,
   roundCoordinate,
   type Weather,
 } from './weather';
@@ -12,8 +13,8 @@ const STORAGE_KEY = 'songsky:sky';
 const REFRESH_MS = 30 * 60 * 1000;
 const TICK_MS = 5 * 60 * 1000;
 
-/** The device's position, rounded and named by its coordinates. */
-async function locate(): Promise<Place> {
+/** The device's position, rounded and named after its town (or its coordinates offline). */
+async function locate(previous: Place | null = null): Promise<Place> {
   const position = await new Promise<GeolocationPosition>((resolve, reject) =>
     navigator.geolocation.getCurrentPosition(resolve, reject, {
       enableHighAccuracy: false,
@@ -23,8 +24,19 @@ async function locate(): Promise<Place> {
   );
   const latitude = roundCoordinate(position.coords.latitude);
   const longitude = roundCoordinate(position.coords.longitude);
-  return { name: formatCoordinates(latitude, longitude), latitude, longitude };
+  // Same spot as before: keep its name instead of looking it up again.
+  if (
+    previous?.latitude === latitude &&
+    previous.longitude === longitude &&
+    !isCoordinateName(previous.name)
+  ) {
+    return previous;
+  }
+  const name = (await placeName(latitude, longitude)) ?? formatCoordinates(latitude, longitude);
+  return { name, latitude, longitude };
 }
+
+const isCoordinateName = (name: string) => /°[NS], /.test(name);
 
 /** True only when location was already allowed, so asking won't show a prompt. */
 async function locationAllowed(): Promise<boolean> {
@@ -127,7 +139,7 @@ class SkyState {
     // Follow the person as they move, but only if location is already allowed.
     if (!force && this.source === 'location' && (await locationAllowed())) {
       const previous = this.place;
-      this.place = await locate().catch(() => previous);
+      this.place = await locate(previous).catch(() => previous);
     }
     try {
       if (!this.place) return;

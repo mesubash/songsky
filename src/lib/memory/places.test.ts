@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { PlayRecord } from '$lib/library/types';
-import { groupByDay, groupByPlace, timeAgo } from './places';
+import { collapseRepeats, groupByDay, groupByPlace, timeAgo } from './places';
 
 const kathmandu = { name: 'Kathmandu', latitude: 27.7, longitude: 85.3 };
 const pokhara = { name: 'Pokhara', latitude: 28.2, longitude: 84 };
@@ -65,5 +65,16 @@ describe('groupByDay', () => {
       ['Tue 24 Nov', 1],
     ]);
     expect(groups[0]?.plays[0]?.playedAt).toBe(at(26, 14));
+  });
+});
+
+describe('collapseRepeats', () => {
+  it('folds back-to-back plays of a song, keeping the newest', () => {
+    const plays = ['a', 'a', 'a', 'b', 'a'].map((trackId, i) => ({ trackId, playedAt: 100 - i }));
+    expect(collapseRepeats(plays).map((p) => [p.trackId, p.times, p.playedAt])).toEqual([
+      ['a', 3, 100],
+      ['b', 1, 97],
+      ['a', 1, 96],
+    ]);
   });
 });

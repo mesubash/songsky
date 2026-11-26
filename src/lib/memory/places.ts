@@ -86,3 +86,16 @@ export function groupByDay<T extends { playedAt: number }>(
   }
   return [...groups.values()];
 }
+
+/** Back-to-back plays of the same song (newest first) become one entry with a count. */
+export function collapseRepeats<T extends { trackId: string }>(
+  plays: readonly T[],
+): (T & { times: number })[] {
+  const out: (T & { times: number })[] = [];
+  for (const play of plays) {
+    const last = out.at(-1);
+    if (last?.trackId === play.trackId) last.times++;
+    else out.push({ ...play, times: 1 });
+  }
+  return out;
+}

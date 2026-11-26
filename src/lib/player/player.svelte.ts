@@ -366,8 +366,19 @@ class Player {
     }
   }
 
+  /** Other Songsky tabs: when one starts playing, the rest pause, so only one plays at a time. */
+  #tabs =
+    typeof BroadcastChannel === 'undefined'
+      ? null
+      : Object.assign(new BroadcastChannel('songsky:playback'), {
+          onmessage: (event: MessageEvent) => {
+            if (event.data === 'playing' && this.playing) this.pause();
+          },
+        });
+
   #setPlaying(playing: boolean): void {
     this.playing = playing;
+    if (playing) this.#tabs?.postMessage('playing');
     if ('mediaSession' in navigator) {
       navigator.mediaSession.playbackState = playing ? 'playing' : 'paused';
       // iOS can drop handlers registered before audio started, then shows its own
