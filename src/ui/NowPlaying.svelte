@@ -64,7 +64,7 @@ async function makeArt() {
       </header>
 
       <div class="art">
-        <Cover coverId={track.coverId} size={420} fluid />
+        <Cover coverId={track.coverId} artworkUrl={track.artworkUrl} size={420} fluid />
       </div>
 
       <div class="horizon">

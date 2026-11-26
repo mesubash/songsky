@@ -51,8 +51,8 @@ class Player {
   #loadToken = 0;
   /** Temporary volume multiplier (sleep fade). Not saved as the person's volume. */
   #fade = 1;
-  /** The next song's file, fetched ahead of time. See #prepareNext. */
-  #upNext: { id: string; file: File } | null = null;
+  /** The next song's source (file or stream address), fetched ahead of time. See #prepareNext. */
+  #upNext: { id: string; file: Blob | string } | null = null;
   #fadeStarting = false;
   #engine = new AudioEngine(
     {
@@ -72,7 +72,9 @@ class Player {
       },
       error: () => {
         this.error =
-          'This song could not be played. The file may be damaged or in an unsupported format.';
+          this.current?.source === 'stream'
+            ? 'This song couldn’t be streamed. Check your connection and try again.'
+            : 'This song could not be played. The file may be damaged or in an unsupported format.';
       },
     },
     { effects: !isIOS() },
@@ -282,7 +284,7 @@ class Player {
     // When the file is already fetched, nothing here waits: iOS stops running a locked
     // page moments after a song ends, so the next one must start straight away.
     const ready = this.#upNext?.id === track.id ? this.#upNext.file : null;
-    const file = ready ?? (await library.fileFor(track));
+    const file = ready ?? (await library.sourceFor(track));
     if (token !== this.#loadToken) return; // A newer load started meanwhile.
     if (!file) {
       this.#engine.pause();
@@ -316,7 +318,7 @@ class Player {
     const id = index === null ? undefined : this.queue[index];
     const track = id === undefined ? undefined : library.byId.get(id);
     if (!track || this.#upNext?.id === track.id) return;
-    const file = await library.fileFor(track);
+    const file = await library.sourceFor(track);
     this.#upNext = file ? { id: track.id, file } : null;
   }
 
@@ -397,6 +399,13 @@ class Player {
     const track = this.current;
     if (!('mediaSession' in navigator) || !track) return;
     const base = { title: track.title, artist: track.artist, album: track.album };
+    if (track.artworkUrl) {
+      navigator.mediaSession.metadata = new MediaMetadata({
+        ...base,
+        artwork: [{ src: track.artworkUrl, sizes: '480x480' }],
+      });
+      return;
+    }
     navigator.mediaSession.metadata = new MediaMetadata(base);
     if (!track.coverId) return;
     void library.coverUrl(track.coverId).then((src) => {

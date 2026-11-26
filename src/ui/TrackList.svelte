@@ -29,7 +29,7 @@ const ids = $derived(tracks.map((t) => t.id));
             {i + 1}
           {/if}
         </span>
-        <Cover coverId={track.coverId} size={44} />
+        <Cover coverId={track.coverId} artworkUrl={track.artworkUrl} size={44} />
         <span class="main">
           <span class="title">{track.title}</span>
           <span class="artist">{track.artist}</span>

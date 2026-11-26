@@ -18,7 +18,7 @@ const progress = $derived(player.duration ? (player.position / player.duration) 
     <div class="mini-progress" style:width="{progress}%"></div>
 
     <button class="now" type="button" onclick={onexpand} aria-label="Open player: {track.title}">
-      <Cover coverId={track.coverId} size={52} />
+      <Cover coverId={track.coverId} artworkUrl={track.artworkUrl} size={52} />
       <span class="text">
         <span class="title">{track.title}</span>
         <span class="artist">{track.artist}</span>

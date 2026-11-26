@@ -4,10 +4,13 @@ import Icon from './Icon.svelte';
 
 let {
   coverId,
+  artworkUrl,
   size = 48,
   fluid = false,
 }: {
   coverId: string | null;
+  /** Streamed songs: cover art from the music service. */
+  artworkUrl?: string;
   size?: number;
   /** Fill the parent's width instead of a fixed size. */
   fluid?: boolean;
@@ -17,8 +20,8 @@ let url = $state<string | null>(null);
 
 $effect(() => {
   let alive = true;
-  url = null;
-  if (coverId) {
+  url = artworkUrl ?? null;
+  if (!artworkUrl && coverId) {
     void library.coverUrl(coverId).then((u) => {
       if (alive) url = u;
     });
@@ -32,7 +35,15 @@ $effect(() => {
 <!-- Decorative: the title is always shown next to it. -->
 <div class="cover" class:fluid style:--size="{size}px">
   {#if url}
-    <img src={url} alt="" width={size} height={size} decoding="async">
+    <img
+      src={url}
+      alt=""
+      width={size}
+      height={size}
+      decoding="async"
+      loading="lazy"
+      referrerpolicy="no-referrer"
+    >
   {:else}
     <Icon name="music" size={Math.round(size * 0.4)} />
   {/if}
