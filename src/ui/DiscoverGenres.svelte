@@ -40,11 +40,12 @@ const GENRES: { name: string; label?: string; tint: string }[] = [
   { name: 'World', tint: '#0b8277' },
 ];
 
-const TIMES: { id: TrendingTime; label: string }[] = [
-  { id: 'week', label: 'This week' },
-  { id: 'month', label: 'This month' },
-  { id: 'year', label: 'This year' },
-  { id: 'allTime', label: 'All time' },
+/** Phones show the short label so all four fit on one line. */
+const TIMES: { id: TrendingTime; label: string; short: string }[] = [
+  { id: 'week', label: 'This week', short: 'Week' },
+  { id: 'month', label: 'This month', short: 'Month' },
+  { id: 'year', label: 'This year', short: 'Year' },
+  { id: 'allTime', label: 'All time', short: 'All time' },
 ];
 
 let genre = $state<(typeof GENRES)[number] | null>(null);
@@ -126,7 +127,7 @@ const jamendoTag = (name: string) =>
               aria-pressed={time === option.id}
               onclick={() => (time = option.id)}
             >
-              {option.label}
+              <span class="long">{option.label}</span><span class="short">{option.short}</span>
             </button>
           {/each}
         </fieldset>
@@ -285,5 +286,28 @@ const jamendoTag = (name: string) =>
 
 .note {
   color: var(--text-muted);
+}
+
+/* Phones: Week, Month, Year, All time fit on one line. */
+@media (max-width: 720px) {
+  .times {
+    flex-wrap: nowrap;
+  }
+
+  .times button {
+    flex: 1;
+    padding: 0 var(--space-2);
+    white-space: nowrap;
+  }
+
+  .long {
+    display: none;
+  }
+}
+
+@media (min-width: 721px) {
+  .short {
+    display: none;
+  }
 }
 </style>

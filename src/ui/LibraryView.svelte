@@ -534,9 +534,54 @@ async function clearLibrary() {
   display: none;
 }
 
+/* Phones: one swipeable row of play buttons with Add beside it, then a full-width search.
+   Clearing the library lives in Settings, Your data, so this stays calm. */
 @media (max-width: 720px) {
   .phone-add {
     display: contents;
+  }
+
+  .actions {
+    flex-wrap: nowrap;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .actions :global(.library-actions) {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    margin-inline: calc(var(--gutter) * -1) 0;
+    padding-left: var(--gutter);
+    mask-image: linear-gradient(to right, #000 85%, transparent);
+  }
+
+  .actions :global(.library-actions > *) {
+    flex: none;
+  }
+
+  .actions :global(.library-actions)::-webkit-scrollbar {
+    display: none;
+  }
+
+  .find {
+    grid-column: 1 / -1;
+    flex-wrap: nowrap;
+  }
+
+  .filter {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .filter input {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .sort-label,
+  .clear {
+    display: none;
   }
 }
 </style>

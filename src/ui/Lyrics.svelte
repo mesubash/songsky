@@ -132,6 +132,7 @@ li button:hover {
 
 .credit {
   color: var(--text-muted);
+  text-align: center;
   font-size: var(--text-xs);
 }
 

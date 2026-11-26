@@ -105,8 +105,9 @@ const progress = $derived(player.duration ? (player.position / player.duration) 
   padding-inline: max(var(--gutter), calc((100% - var(--content-max)) / 2));
   padding-bottom: max(var(--space-3), env(safe-area-inset-bottom));
   border-top: 1px solid var(--line);
-  background: color-mix(in srgb, var(--sky-top) 78%, transparent);
+  background: var(--sky-top);
   backdrop-filter: blur(24px) saturate(1.4);
+  -webkit-backdrop-filter: blur(24px) saturate(1.4);
 }
 
 .mini-progress {

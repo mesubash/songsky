@@ -35,8 +35,9 @@ const current = (tab: View) =>
   height: var(--tabbar);
   padding-bottom: env(safe-area-inset-bottom);
   border-top: 1px solid var(--line);
-  background: color-mix(in srgb, var(--sky-top) 92%, transparent);
+  background: var(--sky-top);
   backdrop-filter: blur(24px) saturate(1.4);
+  -webkit-backdrop-filter: blur(24px) saturate(1.4);
 }
 
 a {

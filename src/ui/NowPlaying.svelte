@@ -304,7 +304,9 @@ header {
   flex: 1;
   display: grid;
   align-items: center;
-  width: min(100%, 52vh);
+  /* Shrinks on short phone screens so the title and play controls always fit
+     without scrolling (they need about 480px under the cover). */
+  width: clamp(180px, calc(100dvh - 480px), min(100%, 52vh));
   margin: 0 auto;
 }
 
@@ -578,9 +580,13 @@ header {
 }
 
 /* Lyrics: on phones in the cover's square, on wide screens in Up next's space. */
+/* Lyrics use the full width, at the cover's height. */
+.art.lyrics-on {
+  width: 100%;
+}
+
 .phone-lyrics {
-  height: min(100%, 52vh);
-  aspect-ratio: 1;
+  height: clamp(180px, calc(100dvh - 480px), min(100vw, 52vh));
   width: 100%;
 }
 
