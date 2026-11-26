@@ -99,9 +99,9 @@ function ondrop(event: DragEvent) {
 
 <style>
 .app {
-  max-width: 1200px;
+  max-width: calc(var(--content-max) + 2 * var(--gutter));
   margin: 0 auto;
-  padding-inline: clamp(var(--space-4), 4vw, var(--space-12));
+  padding-inline: max(var(--gutter), env(safe-area-inset-left, 0px));
   padding-bottom: var(--space-12);
 }
 

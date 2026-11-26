@@ -25,6 +25,10 @@
   --space-12: 3rem;
   --space-16: 4rem;
 
+  /* Page width: content and the player bar share these, so their edges line up. */
+  --content-max: 1440px;
+  --gutter: clamp(16px, 3vw, 40px);
+
   /* Shape: radius grows with the size of the thing */
   --radius-sm: 6px;
   --radius-md: 12px;

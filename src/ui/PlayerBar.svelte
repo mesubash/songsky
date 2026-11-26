@@ -82,7 +82,9 @@ const progress = $derived(player.duration ? (player.position / player.duration) 
   grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) minmax(0, 1fr);
   align-items: center;
   gap: var(--space-6);
-  padding: var(--space-3) var(--space-6);
+  /* Full-width background, but contents line up with the page content's edges. */
+  padding-block: var(--space-3);
+  padding-inline: max(var(--gutter), calc((100% - var(--content-max)) / 2));
   padding-bottom: max(var(--space-3), env(safe-area-inset-bottom));
   border-top: 1px solid var(--line);
   background: color-mix(in srgb, var(--sky-top) 78%, transparent);
