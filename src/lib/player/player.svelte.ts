@@ -40,6 +40,8 @@ class Player {
   volume = $state(1);
   muted = $state(false);
   error = $state<string | null>(null);
+  /** When set, playback stops as soon as the current song ends (sleep timer). */
+  stopAfterCurrent = $state(false);
 
   current: Track | null = $derived(library.byId.get(this.queue[this.index] ?? '') ?? null);
 
@@ -47,6 +49,8 @@ class Player {
   #order: string[] = [];
   #loadedId: string | null = null;
   #loadToken = 0;
+  /** Temporary volume multiplier (sleep fade). Not saved as the person's volume. */
+  #fade = 1;
   /** The next song's file, fetched ahead of time. See #prepareNext. */
   #upNext: { id: string; file: File } | null = null;
   #fadeStarting = false;
@@ -136,6 +140,11 @@ class Player {
 
   /** `auto` means the song ended by itself (repeat-one replays, end of queue stops). */
   async next(auto = false): Promise<void> {
+    if (auto && this.stopAfterCurrent) {
+      this.stopAfterCurrent = false;
+      this.setFade(1);
+      return;
+    }
     const index = nextIndex(this.queue.length, this.index, this.repeat, auto);
     if (index === null) {
       // End of the queue: rewind to the first song and stop.
@@ -172,6 +181,11 @@ class Player {
   setVolume(volume: number): void {
     this.volume = Math.min(Math.max(volume, 0), 1);
     this.muted = this.volume === 0;
+    this.#applyVolume();
+  }
+
+  setFade(factor: number): void {
+    this.#fade = Math.min(Math.max(factor, 0), 1);
     this.#applyVolume();
   }
 
@@ -312,6 +326,7 @@ class Player {
     const remaining = duration - time;
     if (
       !this.#engine.effects ||
+      this.stopAfterCurrent ||
       sound.crossfade === 0 ||
       this.repeat === 'one' ||
       this.#fadeStarting ||
@@ -354,7 +369,7 @@ class Player {
   }
 
   #applyVolume(): void {
-    this.#engine.setVolume(this.volume, this.muted);
+    this.#engine.setVolume(this.volume * this.#fade, this.muted);
   }
 
   #bindMediaSession(): void {
