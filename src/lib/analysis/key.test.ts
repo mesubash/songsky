@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { camelot, detectKey, fft, keyName } from './key';
+import { camelot, detectKey, fft, keyName, parseKeyName } from './key';
 
 const RATE = 11025;
 
@@ -63,4 +63,21 @@ describe('camelot', () => {
     [{ tonic: 4, mode: 'minor' }, '9A'],
     [{ tonic: 0, mode: 'minor' }, '5A'],
   ] as const)('%o → %s', (key, code) => expect(camelot(key)).toBe(code));
+});
+
+describe('parseKeyName', () => {
+  it.each([
+    ['A flat minor', 8, 'minor'],
+    ['C major', 0, 'major'],
+    ['F sharp major', 6, 'major'],
+    ['B♭ minor', 10, 'minor'],
+    ['Eb major', 3, 'major'],
+    ['g# min', 8, 'minor'],
+  ])('%s', (name, tonic, mode) => expect(parseKeyName(name)).toEqual({ tonic, mode }));
+
+  it('rejects anything else', () => {
+    expect(parseKeyName('')).toBeNull();
+    expect(parseKeyName('H major')).toBeNull();
+    expect(parseKeyName('C')).toBeNull();
+  });
 });

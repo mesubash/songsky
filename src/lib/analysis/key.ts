@@ -142,3 +142,17 @@ export function camelot(key: Key): string {
   const number = ((((majorTonic * 7) % 12) + 7) % 12) + 1;
   return `${number}${key.mode === 'major' ? 'B' : 'A'}`;
 }
+
+const LETTERS: Record<string, number> = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
+
+/** Reads key names like "A flat minor", "F♯ major" or "Bb minor". Null if it isn't one. */
+export function parseKeyName(name: string): Key | null {
+  const match = name.trim().match(/^([A-Ga-g])\s*(sharp|flat|♯|♭|#|b)?\s*(major|minor|maj|min)$/i);
+  if (!match) return null;
+  const [, letter = '', accidental = '', mode = ''] = match;
+  const shift = /sharp|♯|#/i.test(accidental) ? 1 : /flat|♭|^b$/i.test(accidental) ? -1 : 0;
+  return {
+    tonic: ((LETTERS[letter.toUpperCase()] ?? 0) + shift + 12) % 12,
+    mode: /^min/i.test(mode) ? 'minor' : 'major',
+  };
+}

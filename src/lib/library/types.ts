@@ -3,8 +3,9 @@
  * - folder: a file handle from a picked folder (Chromium). Survives reloads.
  * - copy: the file was copied into IndexedDB (browsers without folder access, e.g. Safari).
  * - session: in memory only, because the copy failed (storage full). Gone after reload.
+ * - stream: played from a music service (Audius) over the internet.
  */
-export type TrackSource = 'folder' | 'copy' | 'session';
+export type TrackSource = 'folder' | 'copy' | 'session' | 'stream';
 
 export interface Track {
   id: string;
@@ -17,6 +18,11 @@ export interface Track {
   coverId: string | null;
   source: TrackSource;
   handle?: FileSystemFileHandle;
+  /** Stream tracks: where the audio and cover come from, and pages to credit the artist. */
+  streamUrl?: string;
+  artworkUrl?: string;
+  link?: string;
+  artistLink?: string;
   addedAt: number;
   /** Set once the song has been analysed, even if tempo or key couldn't be found. */
   analyzedAt?: number;

@@ -1,0 +1,125 @@
+import { camelot, keyName, parseKeyName } from '$lib/analysis/key';
+import type { Track } from '$lib/library/types';
+
+/**
+ * Audius: free, legal music uploaded by its artists. No key is needed; apps identify
+ * themselves with app_name. Streams allow cross-site use, so the EQ, crossfade and
+ * visualizer all work on them.
+ */
+const API = 'https://api.audius.co/v1';
+const APP_NAME = 'Songsky';
+const SITE = 'https://audius.co';
+
+export const AUDIUS_PREFIX = 'audius:';
+
+export function audiusStreamUrl(audiusId: string): string {
+  return `${API}/tracks/${encodeURIComponent(audiusId)}/stream?app_name=${APP_NAME}`;
+}
+
+/** Only Audius stream links are allowed as stream sources (they are shared in Listen together). */
+export function isAudiusStreamUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    return (
+      parsed.origin === new URL(API).origin && /^\/v1\/tracks\/[^/]+\/stream$/.test(parsed.pathname)
+    );
+  } catch {
+    return false;
+  }
+}
+
+const text = (value: unknown, max = 200): string | null =>
+  typeof value === 'string' && value.trim() ? value.trim().slice(0, max) : null;
+const httpsUrl = (value: unknown): string | undefined =>
+  typeof value === 'string' && value.startsWith('https://') ? value : undefined;
+
+/** Turns one Audius API track into a Songsky track, or null if it can't be played freely. */
+export function readAudiusTrack(raw: unknown, now = Date.now()): Track | null {
+  if (typeof raw !== 'object' || raw === null) return null;
+  const t = raw as Record<string, unknown>;
+  const user = (t.user ?? {}) as Record<string, unknown>;
+  const id = text(t.id, 40);
+  const title = text(t.title);
+  const artist = text(user.name) ?? text(user.handle);
+  const duration = typeof t.duration === 'number' && t.duration > 0 ? t.duration : 0;
+  const playable =
+    t.is_streamable !== false &&
+    t.is_stream_gated !== true &&
+    t.is_delete !== true &&
+    t.is_available !== false;
+  if (!id || !title || !artist || !playable) return null;
+
+  const track: Track = {
+    id: `${AUDIUS_PREFIX}${id}`,
+    title,
+    artist,
+    album: '',
+    trackNo: null,
+    duration,
+    coverId: null,
+    source: 'stream',
+    streamUrl: audiusStreamUrl(id),
+    artworkUrl: httpsUrl((t.artwork as Record<string, unknown> | undefined)?.['480x480']),
+    link:
+      typeof t.permalink === 'string' && t.permalink.startsWith('/')
+        ? `${SITE}${t.permalink}`
+        : undefined,
+    artistLink: text(user.handle)
+      ? `${SITE}/${encodeURIComponent(String(user.handle))}`
+      : undefined,
+    addedAt: now,
+  };
+
+  if (typeof t.bpm === 'number' && t.bpm >= 40 && t.bpm <= 250) track.bpm = Math.round(t.bpm);
+  const key = typeof t.musical_key === 'string' ? parseKeyName(t.musical_key) : null;
+  if (key) {
+    track.key = keyName(key);
+    track.camelot = camelot(key);
+  }
+  // Audius already knows tempo and key, so there is nothing left to analyse.
+  if (track.bpm && track.key) track.analyzedAt = now;
+  return track;
+}
+
+async function get(path: string, params: Record<string, string> = {}): Promise<Track[]> {
+  const query = new URLSearchParams({ ...params, app_name: APP_NAME });
+  const response = await fetch(`${API}${path}?${query}`);
+  if (!response.ok) throw new Error(`Audius request failed: ${response.status}`);
+  const body: { data?: unknown } = await response.json();
+  if (!Array.isArray(body.data)) return [];
+  return body.data.map((raw) => readAudiusTrack(raw)).filter((t): t is Track => t !== null);
+}
+
+export function trending(limit = 20): Promise<Track[]> {
+  return get('/tracks/trending', { time: 'week', limit: String(limit) });
+}
+
+export function searchTracks(query: string, limit = 20): Promise<Track[]> {
+  return get('/tracks/search', { query, sort_method: 'relevant', limit: String(limit) });
+}
+
+/** Popular tracks for a set of moods, mixed so no single mood dominates. */
+export async function forMoods(moods: string[], perMood = 8): Promise<Track[]> {
+  const lists = await Promise.all(
+    moods.map((mood) =>
+      get('/tracks/search', {
+        query: '',
+        mood,
+        sort_method: 'popular',
+        limit: String(perMood),
+      }).catch(() => []),
+    ),
+  );
+  const seen = new Set<string>();
+  const mixed: Track[] = [];
+  for (let i = 0; i < perMood; i++) {
+    for (const list of lists) {
+      const track = list[i];
+      if (track && !seen.has(track.id)) {
+        seen.add(track.id);
+        mixed.push(track);
+      }
+    }
+  }
+  return mixed;
+}
