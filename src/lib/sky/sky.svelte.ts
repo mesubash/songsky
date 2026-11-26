@@ -104,10 +104,41 @@ class SkyState {
       this.place = await locate();
       this.source = 'location';
       await this.refresh(true);
-    } catch {
+    } catch (error) {
       this.loading = false;
-      this.error = 'Location wasn’t shared. Search for your city instead.';
+      this.error = await this.#locationProblem(error);
     }
+  }
+
+  /**
+   * Explains why location failed, in a way the person can act on. A blocked site can't
+   * be asked again (browsers don't allow it), so it says how to unblock it, and retries
+   * by itself once they do.
+   */
+  async #locationProblem(error: unknown): Promise<string> {
+    const code = error instanceof GeolocationPositionError ? error.code : 0;
+    let state: PermissionState | 'unknown' = 'unknown';
+    try {
+      const status = await navigator.permissions.query({ name: 'geolocation' });
+      state = status.state;
+      if (state === 'denied') {
+        status.onchange = () => {
+          if (status.state === 'granted') {
+            status.onchange = null;
+            void this.useLocation();
+          }
+        };
+      }
+    } catch {
+      // Older browsers can't report the permission; fall back to the error code.
+    }
+    if (state === 'denied' || (state === 'unknown' && code === 1)) {
+      return 'Location is blocked for Songsky. To allow it, click the icon at the left of the address bar, turn on Location, and Songsky will pick it up. Or search for your city.';
+    }
+    if (code === 2 || code === 3) {
+      return 'Couldn’t find where you are. Check that location is turned on for your device, then try again, or search for your city.';
+    }
+    return 'Location wasn’t allowed. Press Use my location to be asked again, or search for your city.';
   }
 
   async useCity(place: Place): Promise<void> {

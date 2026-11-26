@@ -1,20 +1,23 @@
 <script lang="ts">
-import { memory } from '$lib/memory/memory.svelte';
-
-/** Turns remembering places on or off. `bare` hides the text (still read by screen readers)
-    where a settings row already says what it does. */
-let { bare = false }: { bare?: boolean } = $props();
+/** An on/off switch. `bare` hides the text (still read by screen readers) where a
+    settings row already says what it does. */
+let {
+  checked,
+  label,
+  onchange,
+  bare = false,
+}: { checked: boolean; label: string; onchange: (on: boolean) => void; bare?: boolean } = $props();
 </script>
 
 <label class="switch">
   <input
     type="checkbox"
     role="switch"
-    aria-checked={memory.rememberPlaces}
-    checked={memory.rememberPlaces}
-    onchange={(e) => memory.setRememberPlaces(e.currentTarget.checked)}
+    aria-checked={checked}
+    {checked}
+    onchange={(e) => onchange(e.currentTarget.checked)}
   >
-  <span class:visually-hidden={bare}>Remember where I listen</span>
+  <span class:visually-hidden={bare}>{label}</span>
 </label>
 
 <style>

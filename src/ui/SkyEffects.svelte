@@ -1,4 +1,5 @@
 <script lang="ts">
+import { prefs } from '$lib/prefs.svelte';
 import { sky } from '$lib/sky/sky.svelte';
 
 /**
@@ -16,6 +17,7 @@ interface Particle {
 let canvas: HTMLCanvasElement;
 
 const kind = $derived.by(() => {
+  if (!prefs.weatherEffects) return null;
   const condition = sky.weather?.condition;
   if (condition === 'rain' || condition === 'storm') return 'rain';
   if (condition === 'snow') return 'snow';

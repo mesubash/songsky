@@ -8,7 +8,7 @@ import Button from './Button.svelte';
 import Cover from './Cover.svelte';
 import Icon from './Icon.svelte';
 import MemoryMap from './MemoryMap.svelte';
-import RememberSwitch from './RememberSwitch.svelte';
+import Switch from './Switch.svelte';
 
 const RECENT = 40;
 
@@ -81,7 +81,11 @@ const timeOfDay = (t: number) =>
       <MemoryMap places={memory.places} />
       <div class="map-foot">
         <span class="map-note">Map tiles from OpenStreetMap. Your places stay on this device.</span>
-        <RememberSwitch />
+        <Switch
+          checked={memory.rememberPlaces}
+          label="Remember where I listen"
+          onchange={(on) => memory.setRememberPlaces(on)}
+        />
       </div>
     </div>
   {/if}

@@ -176,7 +176,8 @@ function closeOnBackdrop(event: MouseEvent) {
     {/if}
 
     <p class="hint">
-      Your location is rounded to about 10 km and sent only to Open-Meteo to get the forecast.
+      Your location is rounded to about 10 km, then sent to Open-Meteo for the forecast and
+      BigDataCloud for your town’s name.
     </p>
   </div>
 </dialog>

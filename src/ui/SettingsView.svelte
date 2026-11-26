@@ -7,28 +7,87 @@ import { library } from '$lib/library/library.svelte';
 import { memory } from '$lib/memory/memory.svelte';
 import { player } from '$lib/player/player.svelte';
 import { playlists } from '$lib/playlists/playlists.svelte';
+import { prefs } from '$lib/prefs.svelte';
+import { pwa } from '$lib/pwa.svelte';
 import { sky } from '$lib/sky/sky.svelte';
 import { toast } from '$lib/toast.svelte';
-import { playlistHref } from '$lib/view.svelte';
+import { playlistHref, view } from '$lib/view.svelte';
 import Button from './Button.svelte';
-import RememberSwitch from './RememberSwitch.svelte';
+import Icon, { type IconName } from './Icon.svelte';
+import Logo from './Logo.svelte';
+import Switch from './Switch.svelte';
 
-/** Everything you can set up, in one page: a list of sections on the left (desktop), and
-    rows with a name, a short explanation and the control on the right. Changes save as
-    you make them. */
+/**
+ * Settings, laid out like a system settings app: a list of sections with coloured icons,
+ * and one section at a time. On desktop the list stays on the left; on phones the list is
+ * its own screen and a section opens with a Back button. Each section has its own address
+ * (#settings/sound), so Back and links work. Changes save as you make them.
+ */
 
-const SECTIONS = [
-  { id: 'set-sky', label: 'Sky and weather' },
-  { id: 'set-sound', label: 'Sound' },
-  { id: 'set-playlists', label: 'Playlists' },
-  { id: 'set-memories', label: 'Memories' },
-  { id: 'set-storage', label: 'Storage' },
-  { id: 'set-keys', label: 'Keyboard shortcuts' },
-  { id: 'set-danger', label: 'Your data' },
-  { id: 'set-about', label: 'About' },
+const SECTIONS: { id: string; label: string; icon: IconName; tint: string; hint: string }[] = [
+  {
+    id: 'sky',
+    label: 'Sky and appearance',
+    icon: 'sun',
+    tint: '#f59e0b',
+    hint: 'Weather, location, effects',
+  },
+  {
+    id: 'sound',
+    label: 'Sound',
+    icon: 'sliders',
+    tint: '#ef4444',
+    hint: 'Crossfade and equalizer',
+  },
+  {
+    id: 'playlists',
+    label: 'Playlists',
+    icon: 'music',
+    tint: '#8b5cf6',
+    hint: 'Rename, delete, create',
+  },
+  {
+    id: 'memories',
+    label: 'Memories and privacy',
+    icon: 'pin',
+    tint: '#10b981',
+    hint: 'Places and what leaves your device',
+  },
+  { id: 'data', label: 'Your data', icon: 'folder', tint: '#3b82f6', hint: 'Storage and deleting' },
+  {
+    id: 'keys',
+    label: 'Keyboard shortcuts',
+    icon: 'keyboard',
+    tint: '#64748b',
+    hint: 'Control Songsky from the keyboard',
+  },
+  {
+    id: 'about',
+    label: 'About Songsky',
+    icon: 'info',
+    tint: '#0ea5e9',
+    hint: `Version ${__APP_VERSION__}`,
+  },
 ];
 
+const wide = matchMedia('(min-width: 1100px)');
+let isWide = $state(wide.matches);
+$effect(() => {
+  const update = () => {
+    isWide = wide.matches;
+  };
+  wide.addEventListener('change', update);
+  return () => wide.removeEventListener('change', update);
+});
+
+/** Desktop always shows a section (the first by default); phones show the list until one is picked. */
+const current = $derived(
+  SECTIONS.find((s) => s.id === view.settingsSection) ?? (isWide ? SECTIONS[0] : undefined),
+);
+
 const presets = Object.entries(EQ_PRESETS) as [EqPresetId, (typeof EQ_PRESETS)[EqPresetId]][];
+const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
+const songCount = (trackIds: string[]) => trackIds.filter((id) => library.byId.has(id)).length;
 
 const skyNow = $derived(
   sky.source === 'location'
@@ -37,9 +96,6 @@ const skyNow = $derived(
       ? `Following the weather in ${sky.place?.name}.`
       : 'Following the time of day only. No location is used.',
 );
-
-const songCount = (trackIds: string[]) => trackIds.filter((id) => library.byId.has(id)).length;
-const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
 
 /** How much this browser lets Songsky store, and whether it's protected from cleanup. */
 let storage = $state<{ used: number; quota: number } | null>(null);
@@ -138,383 +194,579 @@ async function clearLibrary() {
   toast.show('Library cleared.');
 }
 
-/** The section being read, highlighted in the list on the left as you scroll. */
-let active = $state(SECTIONS[0]?.id ?? '');
-/** A clicked section stays highlighted while the page scrolls to it. */
-let clickedAt = 0;
-const settling = () => Date.now() - clickedAt < 1200;
+const APP_URL = 'https://songsky.subashsdhami.com.np';
 
-$effect(() => {
-  const headings = SECTIONS.flatMap((s) => document.getElementById(s.id) ?? []);
-  // A heading counts as "current" once it passes just under the top bar.
-  const observer = new IntersectionObserver(
-    () => {
-      if (settling()) return;
-      const passed = headings.filter((h) => h.getBoundingClientRect().top < innerHeight * 0.35);
-      const atBottom = innerHeight + scrollY >= document.documentElement.scrollHeight - 4;
-      active = (atBottom ? headings.at(-1) : passed.at(-1))?.id ?? SECTIONS[0]?.id ?? '';
-    },
-    { rootMargin: '-80px 0px -60% 0px', threshold: [0, 1] },
-  );
-  for (const heading of headings) observer.observe(heading);
-  const onScroll = () => {
-    if (settling()) return;
-    if (innerHeight + scrollY >= document.documentElement.scrollHeight - 4) {
-      active = headings.at(-1)?.id ?? active;
+async function shareApp() {
+  const data = {
+    title: 'Songsky',
+    text: 'A free music player that follows your sky.',
+    url: APP_URL,
+  };
+  try {
+    if (navigator.share) await navigator.share(data);
+    else {
+      await navigator.clipboard.writeText(APP_URL);
+      toast.show('Link to Songsky copied.');
     }
-  };
-  addEventListener('scroll', onScroll, { passive: true });
-  return () => {
-    observer.disconnect();
-    removeEventListener('scroll', onScroll);
-  };
-});
-
-function jumpTo(event: MouseEvent, id: string) {
-  event.preventDefault();
-  active = id;
-  clickedAt = Date.now();
-  document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  } catch {
+    // Closed the share sheet.
+  }
 }
+
+const CREDITS: { name: string; what: string; url: string }[] = [
+  { name: 'Audius', what: 'Free music in Discover', url: 'https://audius.co' },
+  { name: 'Open-Meteo', what: 'Weather', url: 'https://open-meteo.com' },
+  { name: 'BigDataCloud', what: 'Town names', url: 'https://www.bigdatacloud.com' },
+  {
+    name: 'OpenStreetMap and Leaflet',
+    what: 'The memory map',
+    url: 'https://www.openstreetmap.org',
+  },
+  { name: 'Trystero', what: 'Listen together', url: 'https://github.com/dmotz/trystero' },
+  {
+    name: 'music-metadata',
+    what: 'Reading song tags',
+    url: 'https://github.com/Borewit/music-metadata',
+  },
+  {
+    name: 'web-audio-beat-detector',
+    what: 'Tempo detection',
+    url: 'https://github.com/chrisguttandin/web-audio-beat-detector',
+  },
+  { name: 'Svelte', what: 'The interface', url: 'https://svelte.dev' },
+];
 </script>
 
-<div class="settings">
-  <h2 id="settings-title" class="desktop-title page-title">Settings</h2>
+<div class="settings" class:open={!!current}>
+  <h2 class="desktop-title">Settings</h2>
 
-  <nav class="index" aria-label="Settings sections">
+  <nav class="list" aria-label="Settings sections">
     <ul>
       {#each SECTIONS as section (section.id)}
         <li>
           <a
-            href="#settings"
-            aria-current={active === section.id ? 'location' : undefined}
-            onclick={(e) => jumpTo(e, section.id)}
-            >{section.label}</a
+            href="#settings/{section.id}"
+            aria-current={current?.id === section.id ? 'page' : undefined}
           >
+            <span class="tile" style:--tint={section.tint}
+              ><Icon name={section.icon} size={18} /></span
+            >
+            <span class="entry">
+              <span class="entry-name">{section.label}</span>
+              <span class="entry-hint">{section.hint}</span>
+            </span>
+            <span class="chevron" aria-hidden="true"><Icon name="chevron-down" size={16} /></span>
+          </a>
         </li>
       {/each}
     </ul>
   </nav>
 
-  <div class="sections">
-    <section aria-labelledby="set-sky">
-      <h3 id="set-sky">Sky and weather</h3>
-      <div class="rows">
-        <div class="row stack">
-          <div class="text">
-            <p class="name">Where your sky comes from</p>
-            <p class="desc">The colours, the logo and Discover’s picks follow it. {skyNow}</p>
-          </div>
-          <fieldset class="segmented">
-            <legend class="visually-hidden">Sky source</legend>
-            <button
-              type="button"
-              aria-pressed={sky.source === 'location'}
-              onclick={() => sky.useLocation()}
-            >
-              My location
-            </button>
-            <button
-              type="button"
-              aria-pressed={sky.source === 'city'}
-              onclick={() => (sky.panelOpen = true)}
-            >
-              {sky.source === 'city' && sky.place ? sky.place.name : 'A city'}
-            </button>
-            <button
-              type="button"
-              aria-pressed={sky.source === 'time'}
-              onclick={() => sky.useTimeOnly()}
-            >
-              Time of day
-            </button>
-          </fieldset>
-          {#if sky.error}
-            <p class="desc warn">{sky.error}</p>
-          {/if}
-        </div>
-      </div>
-    </section>
+  {#if current}
+    <section class="pane" aria-labelledby="pane-title">
+      <a class="back" href="#settings"><Icon name="chevron-down" size={18} />Settings</a>
+      <header class="pane-head">
+        <span class="tile big" style:--tint={current.tint}
+          ><Icon name={current.icon} size={22} /></span
+        >
+        <h3 id="pane-title">{current.label}</h3>
+      </header>
 
-    <section aria-labelledby="set-sound">
-      <h3 id="set-sound">Sound</h3>
-      {#if player.effectsAvailable}
+      {#if current.id === 'sky'}
+        <div class="rows">
+          <div class="row stack">
+            <div class="text">
+              <p class="name">Where your sky comes from</p>
+              <p class="desc">The colours, the logo and Discover’s picks follow it. {skyNow}</p>
+            </div>
+            <fieldset class="segmented">
+              <legend class="visually-hidden">Sky source</legend>
+              <button
+                type="button"
+                aria-pressed={sky.source === 'location'}
+                onclick={() => sky.useLocation()}
+              >
+                My location
+              </button>
+              <button
+                type="button"
+                aria-pressed={sky.source === 'city'}
+                onclick={() => (sky.panelOpen = true)}
+              >
+                {sky.source === 'city' && sky.place ? sky.place.name : 'A city'}
+              </button>
+              <button
+                type="button"
+                aria-pressed={sky.source === 'time'}
+                onclick={() => sky.useTimeOnly()}
+              >
+                Time of day
+              </button>
+            </fieldset>
+            {#if sky.error}
+              <p class="desc warn">{sky.error}</p>
+            {/if}
+          </div>
+          <div class="row">
+            <div class="text">
+              <p class="name">Weather on screen</p>
+              <p class="desc">Faint rain or snow falls across the page when your weather has it.</p>
+            </div>
+            <Switch
+              bare
+              label="Weather on screen"
+              checked={prefs.weatherEffects}
+              onchange={(on) => prefs.setWeatherEffects(on)}
+            />
+          </div>
+        </div>
+      {:else if current.id === 'sound'}
+        {#if player.effectsAvailable}
+          <div class="rows">
+            <div class="row">
+              <div class="text">
+                <label class="name" for="set-crossfade">Crossfade</label>
+                <p class="desc">Songs overlap at the end so there’s no silence between them.</p>
+              </div>
+              <div class="control slider">
+                <input
+                  id="set-crossfade"
+                  class="range"
+                  type="range"
+                  min="0"
+                  max={CROSSFADE_MAX}
+                  step="1"
+                  value={sound.crossfade}
+                  style:--fill="{(sound.crossfade / CROSSFADE_MAX) * 100}%"
+                  aria-valuetext={sound.crossfade === 0 ? 'Off' : `${sound.crossfade} seconds`}
+                  oninput={(e) => sound.setCrossfade(e.currentTarget.valueAsNumber)}
+                >
+                <output for="set-crossfade"
+                  >{sound.crossfade === 0 ? 'Off' : `${sound.crossfade} s`}</output
+                >
+              </div>
+            </div>
+            <div class="row stack">
+              <div class="text">
+                <p class="name">Equalizer</p>
+                <p class="desc">Fine-tune each band from Sound settings in the player bar.</p>
+              </div>
+              <fieldset class="segmented">
+                <legend class="visually-hidden">Equalizer preset</legend>
+                {#each presets as [id, preset] (id)}
+                  <button
+                    type="button"
+                    aria-pressed={sound.preset === id}
+                    onclick={() => sound.usePreset(id)}
+                  >
+                    {preset.label}
+                  </button>
+                {/each}
+                {#if !sound.preset}
+                  <span class="custom">Custom</span>
+                {/if}
+              </fieldset>
+            </div>
+            <div class="row">
+              <div class="text">
+                <p class="name">Reset sound</p>
+                <p class="desc">Back to a flat equalizer and a 4 second crossfade.</p>
+              </div>
+              <Button disabled={sound.isDefault} onclick={() => sound.reset()}>Reset</Button>
+            </div>
+          </div>
+        {:else}
+          <p class="note">
+            On iPhone and iPad, crossfade and the equalizer are off so music keeps playing when the
+            screen locks.
+          </p>
+        {/if}
+      {:else if current.id === 'playlists'}
+        <div class="pane-actions">
+          <Button variant="primary" icon="plus" onclick={newPlaylist}>New playlist</Button>
+        </div>
+        {#if playlists.list.length}
+          <ul class="rows">
+            {#each playlists.list as playlist (playlist.id)}
+              <li class="row">
+                {#if renaming === playlist.id}
+                  <form
+                    class="rename"
+                    onsubmit={(e) => {
+                      e.preventDefault();
+                      finishRename();
+                    }}
+                  >
+                    <label class="visually-hidden" for="rename-{playlist.id}">Playlist name</label>
+                    <input
+                      id="rename-{playlist.id}"
+                      bind:value={draft}
+                      maxlength="80"
+                      onblur={finishRename}
+                      onkeydown={(e) => {
+                        if (e.key === 'Escape') renaming = null;
+                      }}
+                      use:focusAndSelect
+                    >
+                  </form>
+                {:else}
+                  <div class="text">
+                    <a class="name link" href={playlistHref(playlist.id)}>{playlist.name}</a>
+                    <p class="desc">{plural(songCount(playlist.trackIds), 'song')}</p>
+                  </div>
+                {/if}
+                <div class="control">
+                  <Button variant="quiet" onclick={() => startRename(playlist.id, playlist.name)}
+                    >Rename</Button
+                  >
+                  <Button variant="quiet" onclick={() => deletePlaylist(playlist.id, playlist.name)}
+                    >Delete</Button
+                  >
+                </div>
+              </li>
+            {/each}
+          </ul>
+        {:else}
+          <div class="empty">
+            <p class="name">No playlists yet</p>
+            <p class="desc">Make one here, or use “Add to playlist” in any song’s ⋯ menu.</p>
+          </div>
+        {/if}
+      {:else if current.id === 'memories'}
         <div class="rows">
           <div class="row">
             <div class="text">
-              <label class="name" for="set-crossfade">Crossfade</label>
-              <p class="desc">Songs overlap at the end so there’s no silence between them.</p>
+              <p class="name">Remember where I listen</p>
+              <p class="desc">
+                Pins each song to the town where you played it, on a map in Memories. Places stay on
+                this device.
+              </p>
             </div>
-            <div class="control slider">
-              <input
-                id="set-crossfade"
-                class="range"
-                type="range"
-                min="0"
-                max={CROSSFADE_MAX}
-                step="1"
-                value={sound.crossfade}
-                style:--fill="{(sound.crossfade / CROSSFADE_MAX) * 100}%"
-                aria-valuetext={sound.crossfade === 0 ? 'Off' : `${sound.crossfade} seconds`}
-                oninput={(e) => sound.setCrossfade(e.currentTarget.valueAsNumber)}
-              >
-              <output for="set-crossfade"
-                >{sound.crossfade === 0 ? 'Off' : `${sound.crossfade} s`}</output
-              >
-            </div>
+            <Switch
+              bare
+              label="Remember where I listen"
+              checked={memory.rememberPlaces}
+              onchange={(on) => memory.setRememberPlaces(on)}
+            />
           </div>
-          <div class="row stack">
+        </div>
+        <h4>What leaves your device</h4>
+        <div class="rows">
+          <div class="row">
             <div class="text">
-              <p class="name">Equalizer</p>
-              <p class="desc">Fine-tune each band from Sound settings in the player bar.</p>
+              <p class="name">Your music files</p>
+              <p class="desc">Never. There’s no account and no Songsky server.</p>
             </div>
-            <fieldset class="segmented">
-              <legend class="visually-hidden">Equalizer preset</legend>
-              {#each presets as [id, preset] (id)}
-                <button
-                  type="button"
-                  aria-pressed={sound.preset === id}
-                  onclick={() => sound.usePreset(id)}
-                >
-                  {preset.label}
-                </button>
-              {/each}
-              {#if !sound.preset}
-                <span class="custom">Custom</span>
-              {/if}
-            </fieldset>
           </div>
           <div class="row">
             <div class="text">
-              <p class="name">Reset sound</p>
-              <p class="desc">Back to a flat equalizer and a 4 second crossfade.</p>
+              <p class="name">Your location, rounded to about 10 km</p>
+              <p class="desc">
+                Only if your sky uses it: sent to Open-Meteo for the weather and BigDataCloud for
+                the town name.
+              </p>
             </div>
-            <Button disabled={sound.isDefault} onclick={() => sound.reset()}>Reset</Button>
+          </div>
+          <div class="row">
+            <div class="text">
+              <p class="name">What you search or play in Discover</p>
+              <p class="desc">Sent to Audius, which hosts that music.</p>
+            </div>
+          </div>
+          <div class="row">
+            <div class="text">
+              <p class="name">Listen together</p>
+              <p class="desc">
+                Songs go straight to your friends over an encrypted peer-to-peer link.
+              </p>
+            </div>
           </div>
         </div>
-      {:else}
-        <p class="note">
-          On iPhone and iPad, crossfade and the equalizer are off so music keeps playing when the
-          screen locks.
-        </p>
-      {/if}
-    </section>
-
-    <section aria-labelledby="set-playlists">
-      <div class="section-head">
-        <h3 id="set-playlists">Playlists</h3>
-        <Button icon="plus" onclick={newPlaylist}>New playlist</Button>
-      </div>
-      {#if playlists.list.length}
-        <ul class="rows">
-          {#each playlists.list as playlist (playlist.id)}
-            <li class="row">
-              {#if renaming === playlist.id}
-                <form
-                  class="rename"
-                  onsubmit={(e) => {
-                    e.preventDefault();
-                    finishRename();
-                  }}
-                >
-                  <label class="visually-hidden" for="rename-{playlist.id}">Playlist name</label>
-                  <input
-                    id="rename-{playlist.id}"
-                    bind:value={draft}
-                    maxlength="80"
-                    onblur={finishRename}
-                    onkeydown={(e) => {
-                      if (e.key === 'Escape') renaming = null;
-                    }}
-                    use:focusAndSelect
-                  >
-                </form>
-              {:else}
-                <div class="text">
-                  <a class="name link" href={playlistHref(playlist.id)}>{playlist.name}</a>
-                  <p class="desc">{plural(songCount(playlist.trackIds), 'song')}</p>
+      {:else if current.id === 'data'}
+        <div class="rows">
+          <div class="row stack">
+            <div class="text">
+              <p class="name">On this device</p>
+              <p class="desc">
+                {plural(library.tracks.length, 'song')},
+                {plural(playlists.list.length, 'playlist')},
+                {plural(memory.plays.length, 'play')} in your history.
+              </p>
+            </div>
+            {#if storage}
+              <div class="meter">
+                <div class="bar">
+                  <span
+                    style:width="{Math.max(1, (storage.used / (storage.quota || 1)) * 100)}%"
+                  ></span>
                 </div>
-              {/if}
-              <div class="control">
-                <Button variant="quiet" onclick={() => startRename(playlist.id, playlist.name)}
-                  >Rename</Button
-                >
-                <Button variant="quiet" onclick={() => deletePlaylist(playlist.id, playlist.name)}
-                  >Delete</Button
-                >
+                <p class="desc">
+                  {size(storage.used)} used of {size(storage.quota)} this browser allows
+                </p>
               </div>
+            {/if}
+          </div>
+          <div class="row">
+            <div class="text">
+              <p class="name">Protect from automatic cleanup</p>
+              <p class="desc">
+                Browsers may delete site data when the device runs low on space. This asks yours not
+                to.
+              </p>
+            </div>
+            {#if persisted}
+              <span class="value">Protected</span>
+            {:else}
+              <Button onclick={keepSafe}>Protect</Button>
+            {/if}
+          </div>
+        </div>
+        <h4>Delete</h4>
+        <div class="rows danger">
+          <div class="row">
+            <div class="text">
+              <p class="name">Listening history</p>
+              <p class="desc">Recently played, Memories and the map. Songs and playlists stay.</p>
+            </div>
+            <Button disabled={!memory.plays.length} onclick={clearHistory}>Delete</Button>
+          </div>
+          <div class="row">
+            <div class="text">
+              <p class="name">All playlists</p>
+              <p class="desc">The songs stay in your library.</p>
+            </div>
+            <Button disabled={!playlists.list.length} onclick={deleteAllPlaylists}>Delete</Button>
+          </div>
+          <div class="row">
+            <div class="text">
+              <p class="name">Whole library</p>
+              <p class="desc">
+                Every song, playlist and play. Music files on your device are not touched.
+              </p>
+            </div>
+            <Button disabled={!library.tracks.length} onclick={clearLibrary}>Clear</Button>
+          </div>
+        </div>
+      {:else if current.id === 'keys'}
+        <dl class="rows keys">
+          {#each SHORTCUTS as shortcut (shortcut.label)}
+            <div class="row">
+              <dt>{shortcut.label}</dt>
+              <dd>
+                {#each shortcut.keys as key, i (key)}
+                  {#if i > 0 && shortcut.keys[0] !== 'Shift'}
+                    <span class="or">or</span>
+                  {/if}
+                  <kbd>{key}</kbd>
+                {/each}
+              </dd>
+            </div>
+          {/each}
+        </dl>
+      {:else if current.id === 'about'}
+        <div class="hero">
+          <Logo size={88} />
+          <p class="app-name">Songsky</p>
+          <p class="desc">Music that follows your sky.</p>
+          <p class="version">Version {__APP_VERSION__}, built {__BUILD_DATE__}</p>
+          <div class="hero-actions">
+            {#if pwa.installed}
+              <span class="value">Installed as an app</span>
+            {:else if pwa.canInstall}
+              <Button variant="primary" icon="download" onclick={() => pwa.install()}
+                >Install app</Button
+              >
+            {/if}
+            <Button disabled={pwa.checking} onclick={() => pwa.checkForUpdates()}
+              >{pwa.checking ? 'Checking…' : 'Check for updates'}</Button
+            >
+            <Button icon="share" onclick={shareApp}>Share Songsky</Button>
+          </div>
+        </div>
+
+        <div class="rows">
+          <a
+            class="row link-row"
+            href="https://github.com/mesubash/songsky/issues/new"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <span class="text">
+              <span class="name">Report a problem or suggest an idea</span>
+              <span class="desc">Opens a new issue on GitHub.</span>
+            </span>
+            <Icon name="external" size={16} />
+          </a>
+          <a
+            class="row link-row"
+            href="https://github.com/mesubash/songsky"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <span class="text">
+              <span class="name">Source code</span>
+              <span class="desc">Free and open source under the MIT license.</span>
+            </span>
+            <Icon name="external" size={16} />
+          </a>
+          <a class="row link-row" href="#settings/memories">
+            <span class="text">
+              <span class="name">Privacy</span>
+              <span class="desc">No account, no tracking. See what leaves your device.</span>
+            </span>
+            <span class="chevron"><Icon name="chevron-down" size={16} /></span>
+          </a>
+        </div>
+
+        <h4>Made with</h4>
+        <ul class="rows credits">
+          {#each CREDITS as credit (credit.name)}
+            <li class="row">
+              <a class="name link" href={credit.url} target="_blank" rel="noopener noreferrer"
+                >{credit.name}</a
+              >
+              <span class="desc">{credit.what}</span>
             </li>
           {/each}
         </ul>
-      {:else}
-        <p class="note">No playlists yet. Make one here or from any song’s ⋯ menu.</p>
+
+        <p class="made">Made by Subash Singh Dhami.</p>
       {/if}
     </section>
-
-    <section aria-labelledby="set-memories">
-      <h3 id="set-memories">Memories</h3>
-      <div class="rows">
-        <div class="row">
-          <div class="text">
-            <p class="name">Remember where I listen</p>
-            <p class="desc">
-              Pins each song to the town where you played it, on a map in Memories. Places stay on
-              this device.
-            </p>
-          </div>
-          <RememberSwitch bare />
-        </div>
-      </div>
-    </section>
-
-    <section aria-labelledby="set-storage">
-      <h3 id="set-storage">Storage</h3>
-      <div class="rows">
-        <div class="row">
-          <div class="text">
-            <p class="name">On this device</p>
-            <p class="desc">
-              {plural(library.tracks.length, 'song')}, {plural(playlists.list.length, 'playlist')},
-              {plural(memory.plays.length, 'play')} in your history. There is no account; nothing
-              leaves this device.
-            </p>
-          </div>
-          {#if storage}
-            <span class="value"
-              >{size(storage.used)} <span class="of">of {size(storage.quota)}</span></span
-            >
-          {/if}
-        </div>
-        <div class="row">
-          <div class="text">
-            <p class="name">Protect from automatic cleanup</p>
-            <p class="desc">
-              Browsers may delete site data when the device runs low on space. This asks yours not
-              to.
-            </p>
-          </div>
-          {#if persisted}
-            <span class="value">Protected</span>
-          {:else}
-            <Button onclick={keepSafe}>Protect</Button>
-          {/if}
-        </div>
-      </div>
-    </section>
-
-    <section class="keys-section" aria-labelledby="set-keys">
-      <h3 id="set-keys">Keyboard shortcuts</h3>
-      <dl class="rows keys">
-        {#each SHORTCUTS as shortcut (shortcut.label)}
-          <div class="row">
-            <dt class="key-label">{shortcut.label}</dt>
-            <dd>
-              {#each shortcut.keys as key, i (key)}
-                {#if i > 0 && shortcut.keys[0] !== 'Shift'}
-                  <span class="or">or</span>
-                {/if}
-                <kbd>{key}</kbd>
-              {/each}
-            </dd>
-          </div>
-        {/each}
-      </dl>
-    </section>
-
-    <section aria-labelledby="set-danger">
-      <h3 id="set-danger">Your data</h3>
-      <div class="rows danger">
-        <div class="row">
-          <div class="text">
-            <p class="name">Listening history</p>
-            <p class="desc">Recently played, Memories and the map. Songs and playlists stay.</p>
-          </div>
-          <Button disabled={!memory.plays.length} onclick={clearHistory}>Delete</Button>
-        </div>
-        <div class="row">
-          <div class="text">
-            <p class="name">All playlists</p>
-            <p class="desc">The songs stay in your library.</p>
-          </div>
-          <Button disabled={!playlists.list.length} onclick={deleteAllPlaylists}>Delete</Button>
-        </div>
-        <div class="row">
-          <div class="text">
-            <p class="name">Whole library</p>
-            <p class="desc">
-              Every song, playlist and play. Music files on your device are not touched.
-            </p>
-          </div>
-          <Button disabled={!library.tracks.length} onclick={clearLibrary}>Clear</Button>
-        </div>
-      </div>
-    </section>
-
-    <section aria-labelledby="set-about">
-      <h3 id="set-about">About</h3>
-      <p class="note">
-        Songsky is free and open source. Music in Discover comes from independent artists on
-        <a href="https://audius.co" target="_blank" rel="noopener noreferrer">Audius</a>. Weather
-        from
-        <a href="https://open-meteo.com" target="_blank" rel="noopener noreferrer">Open-Meteo</a>,
-        town names from
-        <a href="https://www.bigdatacloud.com" target="_blank" rel="noopener noreferrer"
-          >BigDataCloud</a
-        >, maps from
-        <a href="https://www.openstreetmap.org" target="_blank" rel="noopener noreferrer"
-          >OpenStreetMap</a
-        >.
-        <a href="https://github.com/mesubash/songsky" target="_blank" rel="noopener noreferrer"
-          >Source code on GitHub</a
-        >.
-      </p>
-    </section>
-  </div>
+  {/if}
 </div>
 
 <style>
 .settings {
   display: grid;
-  gap: var(--space-8);
+  gap: var(--space-6);
   padding-block: var(--space-8);
 }
 
-.page-title {
+/* Phones: the list is its own screen; opening a section replaces it. */
+.settings.open .list {
+  display: none;
+}
+
+.list ul {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  list-style: none;
+}
+
+.list li + li {
+  border-top: 1px solid var(--line);
+}
+
+.list a {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 60px;
+  padding: var(--space-2) var(--space-4);
+  color: var(--text);
+  text-decoration: none;
+  transition: background-color var(--duration-fast) var(--ease-out);
+}
+
+.list a:hover {
+  background: var(--surface-strong);
+}
+
+/* A coloured square behind each section's icon, as in system settings apps. */
+.tile {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  background: var(--tint);
+  color: #fff;
+}
+
+.tile.big {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+}
+
+.entry {
+  flex: 1;
+  display: grid;
+  min-width: 0;
+}
+
+.entry-name {
+  font-weight: 600;
+}
+
+.entry-hint {
+  overflow: hidden;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chevron {
+  display: grid;
+  color: var(--text-muted);
+  transform: rotate(-90deg);
+}
+
+.pane {
+  display: grid;
+  align-content: start;
+  gap: var(--space-4);
+  min-width: 0;
+  animation: pane-in 200ms var(--ease-out);
+}
+
+.back {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  width: fit-content;
+  min-height: 44px;
+  color: var(--text);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.back :global(svg) {
+  transform: rotate(90deg);
+}
+
+.pane-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding-bottom: var(--space-2);
+}
+
+h3 {
   font-size: var(--text-2xl);
   letter-spacing: -0.02em;
 }
 
-/* The section list is for wide screens; phones just scroll. */
-.index {
-  display: none;
+h4 {
+  padding-top: var(--space-4);
+  color: var(--text-muted);
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  font-weight: 600;
 }
 
-.sections {
-  display: grid;
-  gap: var(--space-12);
-  max-width: 60rem;
-  min-width: 0;
-}
-
-section {
-  display: grid;
-  gap: var(--space-3);
-  scroll-margin-top: 112px;
-}
-
-h3 {
-  font-size: var(--text-lg);
-  letter-spacing: -0.01em;
-}
-
-.section-head {
+.pane-actions {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-4);
 }
 
-/* One panel per section; rows inside are split by thin lines. */
+/* One panel per group; rows inside are split by thin lines. */
 .rows {
   margin: 0;
   padding: 0;
@@ -539,17 +791,17 @@ h3 {
   border-top: 1px solid var(--line);
 }
 
-/* Rows whose control is wide (button groups) put it on its own line. */
-.row.stack {
-  flex-direction: column;
-  align-items: stretch;
-}
-
 .text {
   flex: 1 1 18rem;
   display: grid;
   gap: 2px;
   min-width: 0;
+}
+
+/* Rows whose control is wide (button groups, meters) put it on its own line. */
+.row.stack {
+  flex-direction: column;
+  align-items: stretch;
 }
 
 .row.stack .text {
@@ -572,15 +824,15 @@ h3 {
 
 .desc,
 .note,
-.of,
 .or,
-output {
+output,
+.version {
   color: var(--text-muted);
   font-size: var(--text-sm);
 }
 
 .desc {
-  max-width: 52ch;
+  max-width: 56ch;
 }
 
 .warn {
@@ -590,10 +842,6 @@ output {
 
 .note {
   max-width: 60ch;
-}
-
-.note a {
-  color: var(--text);
 }
 
 .control {
@@ -619,19 +867,18 @@ output {
 
 .value {
   font-weight: 600;
-  font-variant-numeric: tabular-nums;
 }
 
-/* A row of joined buttons where one is chosen, like a physical switch. */
+/* Joined buttons where one is chosen, like a physical switch. */
 .segmented {
   display: flex;
-  min-width: 0;
-  margin: 0;
-  border: 0;
   flex-wrap: wrap;
   gap: 4px;
   width: fit-content;
+  min-width: 0;
+  margin: 0;
   padding: 4px;
+  border: 0;
   border-radius: var(--radius-full);
   background: var(--surface-strong);
 }
@@ -676,12 +923,43 @@ output {
   font-weight: 600;
 }
 
+.empty {
+  display: grid;
+  gap: var(--space-1);
+  padding: var(--space-8) var(--space-6);
+  border: 1px dashed var(--line);
+  border-radius: var(--radius-lg);
+  text-align: center;
+  justify-items: center;
+}
+
+.meter {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.bar {
+  height: 8px;
+  overflow: hidden;
+  border-radius: var(--radius-full);
+  background: var(--surface-strong);
+}
+
+.bar span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--accent);
+}
+
+/* Deleting gets its own panel with a warm edge, so it reads as "careful". */
+.danger {
+  border-color: color-mix(in srgb, #c2410c 45%, var(--line));
+}
+
 .keys .row {
   min-height: 48px;
   padding-block: var(--space-2);
-}
-
-.key-label {
   font-size: var(--text-sm);
 }
 
@@ -704,76 +982,91 @@ kbd {
   text-align: center;
 }
 
-/* Deleting gets its own panel with a warm edge, so it reads as "careful". */
-.danger {
-  border-color: color-mix(in srgb, #c2410c 45%, var(--line));
+/* About: the app's icon, name and version, centred, as in an "About this app" window. */
+.hero {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-1);
+  padding: var(--space-8) var(--space-6);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  text-align: center;
 }
 
-/* Desktop: the title is in the top bar, and the section list sits on the left. */
+.hero :global(svg) {
+  margin-bottom: var(--space-2);
+}
+
+.app-name {
+  font-family: var(--font-display);
+  font-size: var(--text-2xl);
+  font-weight: var(--display-weight);
+  letter-spacing: -0.03em;
+}
+
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-2);
+  padding-top: var(--space-4);
+}
+
+.link-row {
+  color: var(--text);
+  text-decoration: none;
+}
+
+.link-row:hover {
+  background: var(--surface-strong);
+}
+
+.credits .row {
+  min-height: 48px;
+  padding-block: var(--space-2);
+}
+
+.made {
+  padding-top: var(--space-2);
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  text-align: center;
+}
+
+/* Desktop: list on the left, the open section on the right. */
 @media (min-width: 1100px) {
   .settings {
-    grid-template-columns: 13rem minmax(0, 60rem);
+    grid-template-columns: 19rem minmax(0, 52rem);
     align-items: start;
-    gap: var(--space-12);
+    gap: var(--space-10, 40px);
     padding-top: var(--space-6);
   }
 
-  .index {
+  .settings.open .list {
     position: sticky;
     top: 88px;
     display: block;
   }
 
-  .index ul {
-    display: grid;
-    gap: 2px;
-    margin: 0;
-    padding: 0;
-    list-style: none;
-  }
-
-  .index a {
-    display: block;
-    transition:
-      background-color var(--duration-fast) var(--ease-out),
-      color var(--duration-fast) var(--ease-out);
-    padding: var(--space-2) var(--space-3);
-    border-radius: var(--radius-md);
-    color: var(--text-muted);
-    font-size: var(--text-sm);
-    font-weight: 550;
-    text-decoration: none;
-  }
-
-  .index a:hover {
-    background: var(--surface);
-    color: var(--text);
-  }
-
-  /* The section you're reading: filled, with a bar on the left like the main sidebar. */
-  .index a[aria-current="location"] {
-    position: relative;
+  .list a[aria-current="page"] {
     background: var(--surface-strong);
-    color: var(--text);
-    font-weight: 650;
   }
 
-  .index a[aria-current="location"]::before {
-    content: "";
-    position: absolute;
-    top: 8px;
-    bottom: 8px;
-    left: 0;
-    width: 3px;
-    border-radius: 3px;
-    background: var(--accent);
+  .list a[aria-current="page"] .entry-name {
+    color: var(--text);
+  }
+
+  .list .chevron,
+  .back {
+    display: none;
   }
 }
 
-/* The keyboard list is for computers; touch screens hide it. */
-@media (pointer: coarse) {
-  .keys-section {
-    display: none;
+@keyframes pane-in {
+  from {
+    transform: translateY(6px);
+    opacity: 0;
   }
 }
 </style>
