@@ -61,6 +61,10 @@ const ICONS = {
   },
   search: { d: 'M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14zM21 21l-5-5', fill: false },
   share: { d: 'M12 3v12M7 8l5-5 5 5M5 14v5a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-5', fill: false },
+  walk: {
+    d: 'M13.5 5.5a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM9 20l2.5-5.5L14 17v4M6 12l2-4 4-1 3 4 3 1M11.5 14.5 12 9',
+    fill: false,
+  },
   disc: {
     d: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4z',
     fill: false,

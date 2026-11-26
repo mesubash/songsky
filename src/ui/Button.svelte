@@ -88,6 +88,11 @@ let {
   background: var(--surface);
 }
 
+.quiet.active {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
 .icon.active {
   color: var(--accent);
 }

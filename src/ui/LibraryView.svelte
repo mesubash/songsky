@@ -6,6 +6,7 @@ import { library } from '$lib/library/library.svelte';
 import { memory } from '$lib/memory/memory.svelte';
 import { player } from '$lib/player/player.svelte';
 import Button from './Button.svelte';
+import PaceButton from './PaceButton.svelte';
 import TrackList from './TrackList.svelte';
 
 const ids = $derived(library.tracks.map((t) => t.id));
@@ -52,6 +53,7 @@ function clearLibrary() {
         onclick={playMix}
         >Mix</Button
       >
+      <PaceButton />
       <button class="clear" type="button" onclick={clearLibrary}>Clear library</button>
     </div>
   </div>
