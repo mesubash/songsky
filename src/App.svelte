@@ -30,6 +30,7 @@ import SoundPanel from './ui/SoundPanel.svelte';
 import StatusMessage from './ui/StatusMessage.svelte';
 import UpdatePrompt from './ui/UpdatePrompt.svelte';
 import ViewTabs from './ui/ViewTabs.svelte';
+import YearView from './ui/YearView.svelte';
 
 let ready = $state(false);
 let nowPlayingOpen = $state(false);
@@ -168,6 +169,8 @@ $effect(() => {
           <SettingsView />
         {:else if view.current === 'shared'}
           <SharedPlaylistView />
+        {:else if view.current === 'year'}
+          <YearView />
         {:else if library.visibleTracks.length > 0}
           <LibraryView />
         {:else}

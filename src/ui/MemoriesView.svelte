@@ -48,6 +48,16 @@ const timeOfDay = (t: number) =>
     </p>
   </div>
 
+  {#if memory.plays.length}
+    <a class="year-card" href="#year">
+      <span class="year-text">
+        <span class="year-title">Your {new Date().getFullYear()} in Songsky</span>
+        <span class="year-sub">Top songs, artists, skies and places, and a picture to share.</span>
+      </span>
+      <span class="year-go" aria-hidden="true">→</span>
+    </a>
+  {/if}
+
   {#if tip}
     <div class="tip">
       <span class="tip-icon" aria-hidden="true"><Icon name="pin" size={22} /></span>
@@ -323,5 +333,47 @@ ol {
   .memories {
     padding-top: var(--space-4);
   }
+}
+/* A bright card that leads to Your year. */
+.year-card {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-6);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(
+    120deg,
+    color-mix(in srgb, var(--accent) 85%, transparent),
+    color-mix(in srgb, var(--accent) 45%, var(--sky-mid))
+  );
+  color: var(--on-accent);
+  text-decoration: none;
+  transition: transform 180ms var(--ease-out);
+}
+
+.year-card:hover {
+  transform: translateY(-2px);
+}
+
+.year-text {
+  flex: 1;
+  display: grid;
+  gap: 2px;
+}
+
+.year-title {
+  font-family: var(--font-display);
+  font-size: var(--text-xl);
+  font-weight: var(--display-weight);
+  letter-spacing: -0.02em;
+}
+
+.year-sub {
+  font-size: var(--text-sm);
+  opacity: 0.85;
+}
+
+.year-go {
+  font-size: var(--text-2xl);
 }
 </style>

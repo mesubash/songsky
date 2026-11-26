@@ -1,4 +1,11 @@
-export type View = 'library' | 'discover' | 'memories' | 'playlist' | 'settings' | 'shared';
+export type View =
+  | 'library'
+  | 'discover'
+  | 'memories'
+  | 'playlist'
+  | 'settings'
+  | 'shared'
+  | 'year';
 
 const PLAYLIST_PREFIX = '#playlist/';
 const SETTINGS_PREFIX = '#settings/';
@@ -41,15 +48,17 @@ const SHARED_PREFIX = '#shared/';
 const fromHash = (): View =>
   location.hash.startsWith(SHARED_PREFIX)
     ? 'shared'
-    : location.hash === '#memories'
-      ? 'memories'
-      : location.hash === '#settings' || location.hash.startsWith(SETTINGS_PREFIX)
-        ? 'settings'
-        : location.hash === '#discover' || location.hash.startsWith(DISCOVER_PREFIX)
-          ? 'discover'
-          : location.hash.startsWith(PLAYLIST_PREFIX)
-            ? 'playlist'
-            : 'library';
+    : location.hash === '#year'
+      ? 'year'
+      : location.hash === '#memories'
+        ? 'memories'
+        : location.hash === '#settings' || location.hash.startsWith(SETTINGS_PREFIX)
+          ? 'settings'
+          : location.hash === '#discover' || location.hash.startsWith(DISCOVER_PREFIX)
+            ? 'discover'
+            : location.hash.startsWith(PLAYLIST_PREFIX)
+              ? 'playlist'
+              : 'library';
 
 const playlistFromHash = (): string | null =>
   location.hash.startsWith(PLAYLIST_PREFIX)

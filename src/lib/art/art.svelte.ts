@@ -75,12 +75,12 @@ export async function shareFile(file: File, title: string): Promise<boolean> {
   }
 }
 
-export function downloadFile(file: File): void {
+export function downloadFile(file: File, message = 'Song art saved to your downloads.'): void {
   const url = URL.createObjectURL(file);
   const link = document.createElement('a');
   link.href = url;
   link.download = file.name;
   link.click();
   setTimeout(() => URL.revokeObjectURL(url), 10_000);
-  toast.show('Song art saved to your downloads.');
+  toast.show(message);
 }
