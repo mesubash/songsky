@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { audiusStreamUrl, decodeEntities, isAudiusStreamUrl, readAudiusTrack } from './audius';
+import {
+  audiusStreamUrl,
+  decodeEntities,
+  isAudiusStreamUrl,
+  readAudiusPlaylist,
+  readAudiusTrack,
+} from './audius';
 
 const raw = {
   id: 'mRaOxp1',
@@ -71,4 +77,32 @@ describe('decodeEntities', () => {
 
   it('leaves other text alone', () =>
     expect(decodeEntities('AC/DC & friends &copy;')).toBe('AC/DC & friends &copy;'));
+});
+
+describe('readAudiusPlaylist', () => {
+  const raw = {
+    id: 'p1',
+    playlist_name: 'Late &amp; Slow',
+    track_count: 12,
+    user: { name: 'DJ Sky' },
+    artwork: { '480x480': 'https://example.com/a.jpg' },
+    permalink: '/djsky/playlist/late',
+  };
+
+  it('reads a public playlist', () => {
+    expect(readAudiusPlaylist(raw)).toEqual({
+      id: 'p1',
+      name: 'Late & Slow',
+      owner: 'DJ Sky',
+      artworkUrl: 'https://example.com/a.jpg',
+      trackCount: 12,
+      link: 'https://audius.co/djsky/playlist/late',
+    });
+  });
+
+  it('skips private, gated or empty playlists', () => {
+    expect(readAudiusPlaylist({ ...raw, is_private: true })).toBeNull();
+    expect(readAudiusPlaylist({ ...raw, is_stream_gated: true })).toBeNull();
+    expect(readAudiusPlaylist({ ...raw, track_count: 0 })).toBeNull();
+  });
 });

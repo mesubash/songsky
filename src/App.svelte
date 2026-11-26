@@ -6,6 +6,7 @@ import { library } from '$lib/library/library.svelte';
 import { memory } from '$lib/memory/memory.svelte';
 import { player } from '$lib/player/player.svelte';
 import { playlists } from '$lib/playlists/playlists.svelte';
+import { radio } from '$lib/radio/radio.svelte';
 import { toast } from '$lib/toast.svelte';
 import { view } from '$lib/view.svelte';
 import ConfirmDialog from './ui/ConfirmDialog.svelte';
@@ -18,6 +19,7 @@ import NowPlaying from './ui/NowPlaying.svelte';
 import PlayerBar from './ui/PlayerBar.svelte';
 import PlaylistView from './ui/PlaylistView.svelte';
 import QueuePanel from './ui/QueuePanel.svelte';
+import RadioBar from './ui/RadioBar.svelte';
 import SettingsView from './ui/SettingsView.svelte';
 import ShortcutsDialog from './ui/ShortcutsDialog.svelte';
 import Sidebar from './ui/Sidebar.svelte';
@@ -51,6 +53,8 @@ function onkeydown(event: KeyboardEvent) {
   const track = player.current;
   switch (action) {
     case 'toggle':
+      // While the radio is on, Space controls the radio.
+      if (radio.station) return radio.toggle();
       return void player.toggle();
     case 'next':
       return void player.next();
@@ -143,7 +147,7 @@ $effect(() => {
 
 <SkyEffects />
 
-<div class="app" class:has-player={!!player.current}>
+<div class="app" class:has-player={!!player.current || !!radio.station}>
   <Sidebar />
   <div class="content">
     <Header />
@@ -168,11 +172,15 @@ $effect(() => {
   </div>
 </div>
 
-<PlayerBar
-  onexpand={() => (nowPlayingOpen = true)}
-  onsound={() => (soundOpen = true)}
-  onqueue={() => (queueOpen = true)}
-/>
+{#if radio.station}
+  <RadioBar />
+{:else}
+  <PlayerBar
+    onexpand={() => (nowPlayingOpen = true)}
+    onsound={() => (soundOpen = true)}
+    onqueue={() => (queueOpen = true)}
+  />
+{/if}
 <NowPlaying
   bind:open={nowPlayingOpen}
   onsound={() => (soundOpen = true)}

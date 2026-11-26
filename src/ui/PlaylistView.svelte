@@ -28,6 +28,12 @@ const length = $derived(tracks.reduce((sum, t) => sum + (t.duration || 0), 0));
 const covers = $derived(tracks.filter((t) => t.coverId || t.artworkUrl).slice(0, 4));
 
 let editing = $state(false);
+/** The song finder is open (it's always open while the playlist is empty). */
+let adding = $state(false);
+
+function focusWhenAdding(node: HTMLInputElement) {
+  if (adding) node.focus();
+}
 let draft = $state('');
 
 function startRename() {
@@ -176,55 +182,68 @@ async function add(track: Track) {
               <Button icon="shuffle" onclick={() => player.shuffleAll(ids)}>Shuffle</Button>
             {/if}
           {/if}
+          {#if tracks.length && !adding}
+            <Button icon="plus" onclick={() => (adding = true)}>Add songs</Button>
+          {/if}
           <PlaylistMenu {playlist} />
         </div>
       </div>
     </div>
 
-    {#if tracks.length}
-      <TrackList {tracks} onremove={removeSong} removeLabel="Remove from this playlist" />
-    {/if}
+    <!-- Finding songs: shown on an empty playlist, or after pressing Add songs. -->
+    {#if !tracks.length || adding}
+      <section class="finder" aria-label="Add songs">
+        <div class="finder-bar">
+          <search class="find">
+            <label class="visually-hidden" for="add-search">Find songs to add</label>
+            <Icon name="search" size={18} />
+            <input
+              id="add-search"
+              type="search"
+              placeholder="Search for songs to add, from your library or Audius"
+              autocomplete="off"
+              bind:value={query}
+              use:focusWhenAdding
+            >
+          </search>
+          {#if tracks.length}
+            <Button
+              onclick={() => {
+                adding = false;
+                query = '';
+              }}
+              >Done</Button
+            >
+          {/if}
+        </div>
 
-    <section class="add-songs" aria-labelledby="add-title">
-      <div class="add-head">
-        <h3 id="add-title">{tracks.length ? 'Add more songs' : 'Add songs'}</h3>
-        <search class="find">
-          <label class="visually-hidden" for="add-search">Find songs to add</label>
-          <Icon name="search" size={16} />
-          <input
-            id="add-search"
-            type="search"
-            placeholder="Search your library and Audius"
-            autocomplete="off"
-            bind:value={query}
-          >
-        </search>
-      </div>
-
-      {#if fromLibrary.length}
-        <h4>{query.trim() ? 'In your library' : 'Recently added to your library'}</h4>
-        <ul class="suggestions">
-          {#each fromLibrary as track (track.id)}
-            {@render suggestion(track)}
-          {/each}
-        </ul>
-      {/if}
-
-      {#if query.trim().length >= 2}
-        <h4>From Audius</h4>
-        {#if fromAudius.length}
+        {#if fromLibrary.length}
+          <h4>{query.trim() ? 'In your library' : 'Recently added to your library'}</h4>
           <ul class="suggestions">
-            {#each fromAudius as track (track.id)}
+            {#each fromLibrary as track (track.id)}
               {@render suggestion(track)}
             {/each}
           </ul>
-        {:else}
-          <p class="note">{searchingOnline ? 'Searching…' : 'No songs found on Audius.'}</p>
         {/if}
-      {:else if !fromLibrary.length}
-        <p class="note">Type a song or artist to find music to add.</p>
-      {/if}
-    </section>
+
+        {#if query.trim().length >= 2}
+          <h4>From Audius</h4>
+          {#if fromAudius.length}
+            <ul class="suggestions">
+              {#each fromAudius as track (track.id)}
+                {@render suggestion(track)}
+              {/each}
+            </ul>
+          {:else}
+            <p class="note">{searchingOnline ? 'Searching…' : 'No songs found on Audius.'}</p>
+          {/if}
+        {/if}
+      </section>
+    {/if}
+
+    {#if tracks.length}
+      <TrackList {tracks} onremove={removeSong} removeLabel="Remove from this playlist" />
+    {/if}
   </section>
 {:else}
   <p class="note missing">
@@ -331,35 +350,25 @@ h4 {
   padding-top: var(--space-2);
 }
 
-/* Finding songs to add: a panel with a search box and two short lists. */
-.add-songs {
+/* Finding songs to add: a wide search field with results right under it, no frame. */
+.finder {
   display: grid;
   gap: var(--space-3);
-  padding: var(--space-6);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-lg);
-  background: var(--surface);
 }
 
-.add-head {
+.finder-bar {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  justify-content: space-between;
   gap: var(--space-3);
-}
-
-h3 {
-  font-size: var(--text-xl);
-  letter-spacing: -0.02em;
+  max-width: 44rem;
 }
 
 .find {
   display: flex;
-  flex: 0 1 24rem;
+  flex: 1;
   align-items: center;
-  gap: var(--space-2);
-  min-height: 44px;
+  gap: var(--space-3);
+  min-height: 52px;
   padding: 0 var(--space-4);
   border: 1px solid var(--line);
   border-radius: var(--radius-full);
@@ -379,6 +388,7 @@ h3 {
   background: none;
   color: var(--text);
   font: inherit;
+  font-size: var(--text-base);
 }
 
 h4 {
@@ -461,10 +471,6 @@ h4 {
 @media (max-width: 720px) {
   .name {
     font-size: var(--text-2xl);
-  }
-
-  .add-songs {
-    padding: var(--space-4);
   }
 
   .s-time {

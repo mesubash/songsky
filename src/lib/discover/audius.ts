@@ -104,8 +104,62 @@ async function get(path: string, params: Record<string, string> = {}): Promise<T
   return body.data.map((raw) => readAudiusTrack(raw)).filter((t): t is Track => t !== null);
 }
 
-export function trending(limit = 20): Promise<Track[]> {
-  return get('/tracks/trending', { time: 'week', limit: String(limit) });
+export type TrendingTime = 'week' | 'month' | 'year' | 'allTime';
+
+/** Trending songs, overall or in one genre (Audius genre names, e.g. "Lo-Fi"). */
+export function trending(
+  limit = 20,
+  time: TrendingTime = 'week',
+  genre?: string,
+): Promise<Track[]> {
+  const params: Record<string, string> = { time, limit: String(limit) };
+  if (genre) params.genre = genre;
+  return get('/tracks/trending', params);
+}
+
+/** A playlist from Audius, as shown in Discover. */
+export interface AudiusPlaylist {
+  id: string;
+  name: string;
+  owner: string;
+  artworkUrl?: string;
+  trackCount: number;
+  link?: string;
+}
+
+/** Turns one Audius API playlist into an AudiusPlaylist, or null if it isn't public. */
+export function readAudiusPlaylist(raw: unknown): AudiusPlaylist | null {
+  if (typeof raw !== 'object' || raw === null) return null;
+  const p = raw as Record<string, unknown>;
+  const user = (p.user ?? {}) as Record<string, unknown>;
+  const id = text(p.id, 40);
+  const name = text(p.playlist_name);
+  const count = typeof p.track_count === 'number' ? p.track_count : 0;
+  if (!id || !name || p.is_private === true || p.is_stream_gated === true || count < 1) return null;
+  return {
+    id,
+    name,
+    owner: text(user.name) ?? text(user.handle) ?? 'Audius',
+    artworkUrl: httpsUrl((p.artwork as Record<string, unknown> | undefined)?.['480x480']),
+    trackCount: count,
+    link:
+      typeof p.permalink === 'string' && p.permalink.startsWith('/')
+        ? `${SITE}${p.permalink}`
+        : undefined,
+  };
+}
+
+export async function trendingPlaylists(limit = 24): Promise<AudiusPlaylist[]> {
+  const query = new URLSearchParams({ time: 'week', limit: String(limit), app_name: APP_NAME });
+  const response = await fetch(`${API}/playlists/trending?${query}`);
+  if (!response.ok) throw new Error(`Audius request failed: ${response.status}`);
+  const body: { data?: unknown } = await response.json();
+  if (!Array.isArray(body.data)) return [];
+  return body.data.map(readAudiusPlaylist).filter((p): p is AudiusPlaylist => p !== null);
+}
+
+export function playlistTracks(id: string): Promise<Track[]> {
+  return get(`/playlists/${encodeURIComponent(id)}/tracks`);
 }
 
 export function searchTracks(query: string, limit = 20): Promise<Track[]> {

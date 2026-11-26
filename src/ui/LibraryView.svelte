@@ -10,11 +10,14 @@ import { playlists } from '$lib/playlists/playlists.svelte';
 import { playlistHref } from '$lib/view.svelte';
 import Icon from './Icon.svelte';
 import LibraryActions from './LibraryActions.svelte';
+import { placeMenu } from './menu';
 import TrackList from './TrackList.svelte';
 
 const count = $derived(library.tracks.length);
 
 const SORT_KEY = 'songsky:library-sort';
+let sortButton = $state<HTMLButtonElement>();
+let sortMenu = $state<HTMLDivElement>();
 let query = $state('');
 let order = $state<SortOrder>(
   (Object.keys(SORT_LABELS) as SortOrder[]).find((o) => o === localStorage.getItem(SORT_KEY)) ??
@@ -81,17 +84,40 @@ async function clearLibrary() {
             bind:value={query}
           >
         </search>
-        <label class="visually-hidden" for="library-sort">Sort by</label>
-        <select
-          id="library-sort"
+        <button
+          bind:this={sortButton}
           class="sort"
-          value={order}
-          onchange={(e) => setOrder(e.currentTarget.value as SortOrder)}
+          type="button"
+          popovertarget="library-sort-menu"
+          aria-label="Sort by {SORT_LABELS[order]}"
+        >
+          <span class="sort-label">Sort:</span>
+          {SORT_LABELS[order]}
+          <Icon name="chevron-down" size={16} />
+        </button>
+        <div
+          bind:this={sortMenu}
+          id="library-sort-menu"
+          class="sort-menu"
+          popover="auto"
+          role="menu"
+          ontoggle={(e) =>
+            e.newState === 'open' && sortButton && sortMenu && placeMenu(sortButton, sortMenu)}
         >
           {#each Object.entries(SORT_LABELS) as [value, label] (value)}
-            <option {value}>{label}</option>
+            <button
+              type="button"
+              role="menuitemradio"
+              aria-checked={order === value}
+              onclick={() => {
+                setOrder(value as SortOrder);
+                sortMenu?.hidePopover();
+              }}
+            >
+              <span class="check" aria-hidden="true">{order === value ? '✓' : ''}</span>{label}
+            </button>
           {/each}
-        </select>
+        </div>
       </div>
       <button class="clear" type="button" onclick={clearLibrary}>Clear library</button>
     </div>
@@ -175,14 +201,26 @@ async function clearLibrary() {
 }
 
 .sort {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
   min-height: 40px;
-  padding: 0 var(--space-3);
+  padding: 0 var(--space-3) 0 var(--space-4);
   border: 1px solid var(--line);
   border-radius: var(--radius-full);
   background: var(--surface);
   color: var(--text);
-  font: inherit;
   font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.sort:hover {
+  background: var(--surface-strong);
+}
+
+.sort-label {
+  color: var(--text-muted);
+  font-weight: 500;
 }
 
 .playlist-chips {
@@ -265,5 +303,42 @@ async function clearLibrary() {
   .find {
     margin-left: auto;
   }
+}
+.sort-menu {
+  position: fixed;
+  inset: auto;
+  width: 13rem;
+  margin: 0;
+  padding: var(--space-1);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--sky-top) 94%, var(--text));
+  box-shadow: 0 16px 40px -16px rgb(0 0 0 / 0.45);
+  color: var(--text);
+}
+
+.sort-menu button {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  min-height: 40px;
+  padding: 0 var(--space-3);
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  font-weight: 550;
+  text-align: start;
+}
+
+.sort-menu button:hover,
+.sort-menu button:focus-visible {
+  background: var(--surface-strong);
+}
+
+.check {
+  width: 1rem;
+  color: var(--accent);
+  font-weight: 700;
 }
 </style>
