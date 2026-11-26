@@ -7,6 +7,7 @@ import { player } from '$lib/player/player.svelte';
 import Button from './Button.svelte';
 import Controls from './Controls.svelte';
 import Cover from './Cover.svelte';
+import HeartButton from './HeartButton.svelte';
 import { modal } from './modal';
 import SeekBar from './SeekBar.svelte';
 import SongArtSheet from './SongArtSheet.svelte';
@@ -127,7 +128,12 @@ const upNext = $derived(
         <div class="panel">
           {#key track.id}
             <div class="info" in:slide={{ delay: 60, distance: 40 }}>
-              <h2 class="title">{track.title}</h2>
+              <div class="title-row">
+                <h2 class="title">{track.title}</h2>
+                {#if track.source === 'stream'}
+                  <HeartButton {track} size={26} />
+                {/if}
+              </div>
               <p class="artist">
                 {#if track.artistLink}
                   <a href={track.artistLink} target="_blank" rel="noopener noreferrer"
@@ -278,6 +284,19 @@ header {
 
 .up-next {
   display: none;
+}
+
+.title-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+/* Line the heart up with the first line of the title. */
+.title-row :global(.heart) {
+  margin-top: -6px;
+  margin-inline-end: calc(var(--space-3) * -1);
 }
 
 .title {
