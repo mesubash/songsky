@@ -174,4 +174,11 @@ const progress = $derived(player.duration ? (player.position / player.duration) 
     background: var(--accent);
   }
 }
+
+/* Desktop: the bar spans the sidebar too, so it uses plain gutters. */
+@media (min-width: 1100px) {
+  .bar {
+    padding-inline: var(--gutter);
+  }
+}
 </style>

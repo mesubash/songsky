@@ -64,4 +64,20 @@ import TogetherButton from './TogetherButton.svelte';
     padding: 0;
   }
 }
+
+/* Desktop: the sidebar shows the logo, so the header keeps only its actions. */
+@media (min-width: 1100px) {
+  .header {
+    justify-content: flex-end;
+  }
+
+  .wordmark {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}
 </style>

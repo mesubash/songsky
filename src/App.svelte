@@ -12,6 +12,7 @@ import LibraryView from './ui/LibraryView.svelte';
 import MemoriesView from './ui/MemoriesView.svelte';
 import NowPlaying from './ui/NowPlaying.svelte';
 import PlayerBar from './ui/PlayerBar.svelte';
+import Sidebar from './ui/Sidebar.svelte';
 import SkyEffects from './ui/SkyEffects.svelte';
 import SoundPanel from './ui/SoundPanel.svelte';
 import StatusMessage from './ui/StatusMessage.svelte';
@@ -70,21 +71,24 @@ function ondrop(event: DragEvent) {
 <SkyEffects />
 
 <div class="app" class:has-player={!!player.current}>
-  <Header />
-  <main>
-    {#if ready}
-      <ViewTabs />
-      {#if view.current === 'discover'}
-        <DiscoverView />
-      {:else if view.current === 'memories'}
-        <MemoriesView />
-      {:else if library.tracks.length > 0}
-        <LibraryView />
-      {:else}
-        <EmptyState />
+  <Sidebar />
+  <div class="content">
+    <Header />
+    <main>
+      {#if ready}
+        <ViewTabs />
+        {#if view.current === 'discover'}
+          <DiscoverView />
+        {:else if view.current === 'memories'}
+          <MemoriesView />
+        {:else if library.tracks.length > 0}
+          <LibraryView />
+        {:else}
+          <EmptyState />
+        {/if}
       {/if}
-    {/if}
-  </main>
+    </main>
+  </div>
 </div>
 
 <PlayerBar onexpand={() => (nowPlayingOpen = true)} onsound={() => (soundOpen = true)} />
@@ -107,6 +111,27 @@ function ondrop(event: DragEvent) {
 
 .has-player {
   padding-bottom: calc(120px + env(safe-area-inset-bottom));
+}
+
+/* Desktop: sidebar on the left, content using the rest of the width. */
+@media (min-width: 1100px) {
+  .app {
+    display: grid;
+    grid-template-columns: 17rem minmax(0, 1fr);
+    max-width: none;
+    padding: 0;
+  }
+
+  .content {
+    width: 100%;
+    max-width: calc(var(--content-max) + 2 * var(--gutter));
+    padding-inline: var(--gutter);
+    padding-bottom: var(--space-12);
+  }
+
+  .has-player .content {
+    padding-bottom: calc(120px + env(safe-area-inset-bottom));
+  }
 }
 
 .drop {

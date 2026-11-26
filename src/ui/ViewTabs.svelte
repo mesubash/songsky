@@ -33,4 +33,11 @@ a[aria-current="page"] {
   border-bottom-color: var(--accent);
   color: var(--text);
 }
+
+/* Desktop uses the sidebar instead. */
+@media (min-width: 1100px) {
+  .tabs {
+    display: none;
+  }
+}
 </style>
