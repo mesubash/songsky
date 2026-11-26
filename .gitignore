@@ -41,3 +41,6 @@ ios/
 
 # Private planning notes (not published)
 .plan/
+
+# Playwright MCP logs and snapshots (browser testing)
+.playwright-mcp/

@@ -38,6 +38,10 @@ function jamendoProxy(key: string | undefined): Record<string, ProxyOptions> {
   };
 }
 
+/** Production headers minus HSTS: the local preview is plain http, and browsers (Safari
+    especially) can remember HSTS for 127.0.0.1 and then refuse the http page. */
+const { 'Strict-Transport-Security': _hsts, ...previewHeaders } = SECURITY_HEADERS;
+
 export default defineConfig(({ mode }) => {
   const { JAMENDO_CLIENT_ID } = loadEnv(mode, process.cwd(), '');
   const proxy = jamendoProxy(JAMENDO_CLIENT_ID);
@@ -74,7 +78,7 @@ export default defineConfig(({ mode }) => {
     ],
     // Lets a temporary Cloudflare tunnel reach `pnpm preview` for testing on a phone over HTTPS.
     // The same security headers as production (vercel.json), so they're tested locally too.
-    preview: { allowedHosts: ['.trycloudflare.com'], proxy, headers: SECURITY_HEADERS },
+    preview: { allowedHosts: ['.trycloudflare.com'], proxy, headers: previewHeaders },
     server: { proxy },
     resolve: {
       alias: { $lib: fileURLToPath(new URL('./src/lib', import.meta.url)) },

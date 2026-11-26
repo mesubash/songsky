@@ -8,7 +8,9 @@
  * - images and audio from any https host (song covers and streams come from many servers);
  * - connections over https and wss (music APIs, weather, map tiles, Listen together relays);
  * - workers from this site or blob: (tempo analysis);
- * and it refuses to be framed by other sites.
+ * and it refuses to be framed by other sites. (No upgrade-insecure-requests: the site is
+ * https-only through HSTS anyway, and Safari applies that rule to http://localhost too, which
+ * breaks `pnpm preview` there.)
  */
 export const CONTENT_SECURITY_POLICY = [
   "default-src 'self'",
@@ -24,7 +26,6 @@ export const CONTENT_SECURITY_POLICY = [
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",
-  'upgrade-insecure-requests',
 ].join('; ');
 
 export const SECURITY_HEADERS: Record<string, string> = {
