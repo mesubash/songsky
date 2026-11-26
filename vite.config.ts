@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { svelte } from '@sveltejs/vite-plugin-svelte';
 import { defineConfig, loadEnv, type ProxyOptions } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
+import { SECURITY_HEADERS } from './config/security-headers.js';
 
 const SKY = '#161a36';
 const { version } = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8'));
@@ -67,13 +68,14 @@ export default defineConfig(({ mode }) => {
       }),
     ],
     // Lets a temporary Cloudflare tunnel reach `pnpm preview` for testing on a phone over HTTPS.
-    preview: { allowedHosts: ['.trycloudflare.com'], proxy },
+    // The same security headers as production (vercel.json), so they're tested locally too.
+    preview: { allowedHosts: ['.trycloudflare.com'], proxy, headers: SECURITY_HEADERS },
     server: { proxy },
     resolve: {
       alias: { $lib: fileURLToPath(new URL('./src/lib', import.meta.url)) },
     },
     test: {
-      include: ['src/**/*.test.ts', 'api/**/*.test.ts'],
+      include: ['src/**/*.test.ts', 'api/**/*.test.ts', 'config/**/*.test.ts'],
     },
   };
 });

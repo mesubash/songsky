@@ -18,9 +18,14 @@ let {
 
 let url = $state<string | null>(null);
 
+/** Audius serves covers at 150 and 480 px: small spots (lists, the player bar) get the
+    small one, which is about a tenth of the download. */
+const sized = (src: string) =>
+  !fluid && size <= 150 ? src.replace('/480x480.', '/150x150.') : src;
+
 $effect(() => {
   let alive = true;
-  url = artworkUrl ?? null;
+  url = artworkUrl ? sized(artworkUrl) : null;
   if (!artworkUrl && coverId) {
     void library.coverUrl(coverId).then((u) => {
       if (alive) url = u;

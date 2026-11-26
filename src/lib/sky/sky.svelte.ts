@@ -77,11 +77,15 @@ class SkyState {
     this.#restore();
     this.#apply();
     if (this.source === 'time' && !this.#askedForLocation) {
-      // First visit: ask once, so the sky follows the real weather by default.
-      // If the answer is no, the sky stays on time of day and city search remains.
-      this.#askedForLocation = true;
-      this.#save();
-      void this.useLocation();
+      // First visit: never prompt on load (browsers and Lighthouse rightly flag that).
+      // If location was already allowed for this site, use it quietly; otherwise the sky
+      // follows the time of day until the person presses Match my sky.
+      void locationAllowed().then((allowed) => {
+        if (!allowed) return;
+        this.#askedForLocation = true;
+        this.#save();
+        void this.useLocation();
+      });
     } else {
       void this.refresh();
     }
