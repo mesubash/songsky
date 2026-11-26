@@ -6,14 +6,21 @@ import { player } from '$lib/player/player.svelte';
 import Cover from './Cover.svelte';
 import Icon from './Icon.svelte';
 
-let { tracks }: { tracks: Track[] } = $props();
+let {
+  tracks,
+  compact = false,
+}: {
+  tracks: Track[];
+  /** Narrow places (a card): no album or tempo columns, so titles get the room. */
+  compact?: boolean;
+} = $props();
 
 const ids = $derived(tracks.map((t) => t.id));
 /** Streamed songs get Save and Audius buttons; keep the space so columns line up. */
 const hasStreams = $derived(tracks.some((t) => t.source === 'stream'));
 </script>
 
-<ol class="list">
+<ol class="list" class:compact>
   {#each tracks as track, i (track.id)}
     {@const isCurrent = player.current?.id === track.id}
     {@const available = library.isAvailable(track)}
@@ -29,7 +36,8 @@ const hasStreams = $derived(tracks.some((t) => t.source === 'stream'));
           {#if isCurrent}
             <span class="bars" class:paused={!player.playing}><i></i><i></i><i></i></span>
           {:else}
-            {i + 1}
+            <span class="number">{i + 1}</span>
+            <span class="play-icon"><Icon name="play" size={14} /></span>
           {/if}
         </span>
         <Cover coverId={track.coverId} artworkUrl={track.artworkUrl} size={44} />
@@ -136,6 +144,8 @@ li {
 }
 
 .index {
+  display: grid;
+  place-items: center;
   text-align: center;
   font-variant-numeric: tabular-nums;
 }
@@ -226,6 +236,22 @@ li {
   fill: currentColor;
 }
 
+/* Hovering a row swaps its number for a play icon, so it is clear the row plays. */
+.play-icon {
+  display: none;
+  color: var(--text);
+}
+
+.row:hover .number,
+.row:focus-visible .number {
+  display: none;
+}
+
+.row:hover .play-icon,
+.row:focus-visible .play-icon {
+  display: grid;
+}
+
 @keyframes bounce {
   from {
     transform: scaleY(0.25);
@@ -281,5 +307,14 @@ li {
   .album {
     display: none;
   }
+}
+
+.compact .row {
+  grid-template-columns: 2.5rem auto minmax(0, 1fr) 3.5rem;
+}
+
+.compact .album,
+.compact .tempo {
+  display: none;
 }
 </style>
