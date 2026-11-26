@@ -9,6 +9,7 @@ import Button from './Button.svelte';
 import Controls from './Controls.svelte';
 import Cover from './Cover.svelte';
 import HeartButton from './HeartButton.svelte';
+import Lyrics from './Lyrics.svelte';
 import { modal } from './modal';
 import SeekBar from './SeekBar.svelte';
 import SongArtSheet from './SongArtSheet.svelte';
@@ -23,6 +24,8 @@ let {
 const UP_NEXT = 5;
 
 let artOpen = $state(false);
+/** Lyrics instead of the cover (phones) or Up next (wide screens). */
+let showLyrics = $state(false);
 
 // Full screen: the whole page goes full screen, and this player stays on top of it.
 const canFullscreen = document.fullscreenEnabled;
@@ -114,6 +117,16 @@ const upNext = $derived(
         {/if}
         <Button
           variant="icon"
+          icon="lyrics"
+          iconSize={22}
+          active={showLyrics}
+          aria-pressed={showLyrics}
+          aria-label="Lyrics"
+          title="Lyrics"
+          onclick={() => (showLyrics = !showLyrics)}
+        />
+        <Button
+          variant="icon"
           icon="queue"
           iconSize={22}
           aria-label="Queue"
@@ -130,12 +143,16 @@ const upNext = $derived(
       </header>
 
       <div class="stage">
-        <div class="art">
+        <div class="art" class:lyrics-on={showLyrics}>
           {#key track.id}
             <div class="art-slide" in:slide>
               <Cover coverId={track.coverId} artworkUrl={track.artworkUrl} size={560} fluid />
             </div>
           {/key}
+          <!-- Phones: lyrics take the cover's place. Wide screens show them beside it. -->
+          {#if showLyrics}
+            <div class="phone-lyrics"><Lyrics {track} /></div>
+          {/if}
         </div>
 
         <div class="panel">
@@ -178,34 +195,38 @@ const upNext = $derived(
             <Controls large />
           </div>
 
-          <section class="up-next" aria-labelledby="up-next-title">
-            <div class="up-next-head">
-              <h3 id="up-next-title">Up next</h3>
-              <button class="see-queue" type="button" onclick={onqueue}>Edit queue</button>
-            </div>
-            <ol>
-              {#each upNext as { index, track: next } (next?.id)}
-                {#if next}
-                  <li>
-                    <button type="button" onclick={() => player.jumpTo(index)}>
-                      <Cover coverId={next.coverId} artworkUrl={next.artworkUrl} size={40} />
-                      <span class="next-text">
-                        <span class="next-title">{next.title}</span>
-                        <span class="next-artist">{next.artist}</span>
-                      </span>
-                      <span class="next-time"
-                        >{next.duration ? formatTime(next.duration) : ''}</span
-                      >
-                    </button>
+          {#if showLyrics}
+            <div class="wide-lyrics"><Lyrics {track} /></div>
+          {:else}
+            <section class="up-next" aria-labelledby="up-next-title">
+              <div class="up-next-head">
+                <h3 id="up-next-title">Up next</h3>
+                <button class="see-queue" type="button" onclick={onqueue}>Edit queue</button>
+              </div>
+              <ol>
+                {#each upNext as { index, track: next } (next?.id)}
+                  {#if next}
+                    <li>
+                      <button type="button" onclick={() => player.jumpTo(index)}>
+                        <Cover coverId={next.coverId} artworkUrl={next.artworkUrl} size={40} />
+                        <span class="next-text">
+                          <span class="next-title">{next.title}</span>
+                          <span class="next-artist">{next.artist}</span>
+                        </span>
+                        <span class="next-time"
+                          >{next.duration ? formatTime(next.duration) : ''}</span
+                        >
+                      </button>
+                    </li>
+                  {/if}
+                {:else}
+                  <li class="queue-end">
+                    This is the last song. Pick more from your library or Discover.
                   </li>
-                {/if}
-              {:else}
-                <li class="queue-end">
-                  This is the last song. Pick more from your library or Discover.
-                </li>
-              {/each}
-            </ol>
-          </section>
+                {/each}
+              </ol>
+            </section>
+          {/if}
         </div>
       </div>
 
@@ -553,6 +574,42 @@ header {
 
   .up-next ol {
     min-height: calc(3 * 56px + 2 * var(--space-1));
+  }
+}
+
+/* Lyrics: on phones in the cover's square, on wide screens in Up next's space. */
+.phone-lyrics {
+  height: min(100%, 52vh);
+  aspect-ratio: 1;
+  width: 100%;
+}
+
+.art.lyrics-on .art-slide {
+  display: none;
+}
+
+.wide-lyrics {
+  display: none;
+}
+
+@media (min-width: 960px) {
+  .phone-lyrics {
+    display: none;
+  }
+
+  .art.lyrics-on .art-slide {
+    display: block;
+  }
+
+  .wide-lyrics {
+    display: block;
+    height: calc(5 * 56px + 4 * var(--space-1) + 28px);
+  }
+}
+
+@media (min-width: 960px) and (max-height: 1000px) {
+  .wide-lyrics {
+    height: calc(3 * 56px + 2 * var(--space-1) + 28px);
   }
 }
 
