@@ -32,7 +32,7 @@ interface SongInfo {
 }
 
 interface Actions {
-  song: MessageAction<Blob>;
+  song: MessageAction<Blob | ArrayBuffer | ArrayBufferView>;
   now: MessageAction<NowPlaying>;
   chat: MessageAction<ChatMessage>;
   clock: RequestAction<number, number>;
@@ -186,7 +186,7 @@ class Together {
     const { joinRoom } = await import('trystero');
     const room = joinRoom({ appId: APP_ID, password: session.password }, session.room);
     const actions: Actions = {
-      song: room.makeAction<Blob>('song'),
+      song: room.makeAction<Blob | ArrayBuffer | ArrayBufferView>('song'),
       now: room.makeAction<NowPlaying>('now'),
       chat: room.makeAction<ChatMessage>('chat'),
       clock: room.makeAction<number, number>('clock', { kind: 'request' }),
@@ -240,9 +240,12 @@ class Together {
     });
     actions.song.onMessage((data, { metadata }) => {
       const info = readSongInfo(metadata);
-      if (!info || !(data instanceof Blob) || !this.#audio) return;
+      // Binary arrives as bytes (ArrayBuffer or a typed array), not always as a Blob.
+      const isBytes =
+        data instanceof Blob || data instanceof ArrayBuffer || ArrayBuffer.isView(data);
+      if (!info || !isBytes || !this.#audio) return;
       if (this.#url) URL.revokeObjectURL(this.#url);
-      this.#url = URL.createObjectURL(data);
+      this.#url = URL.createObjectURL(data instanceof Blob ? data : new Blob([data as BlobPart]));
       this.#audio.src = this.#url;
       this.#loadedKey = info.key;
       this.song = info;
