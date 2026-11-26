@@ -66,7 +66,13 @@ function playRecent(id: string) {
         (item) => item.view !== 'discover' || prefs.onlineMusic,
       ) as item (item.view)}
         <li>
-          <a href={item.href} aria-current={view.current === item.view ? 'page' : undefined}>
+          <a
+            href={item.href}
+            aria-current={view.current === item.view ||
+            (item.view === 'memories' && view.current === 'year')
+              ? 'page'
+              : undefined}
+          >
             <Icon name={item.icon} size={20} />
             <span class="label">{item.label}</span>
             {#if item.view === 'library' && library.visibleTracks.length}

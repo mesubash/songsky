@@ -13,7 +13,8 @@ const TABS: { view: View; label: string; icon: IconName; href: string }[] = [
 
 const current = (tab: View) =>
   view.current === tab ||
-  (tab === 'library' && (view.current === 'playlist' || view.current === 'shared'));
+  (tab === 'library' && (view.current === 'playlist' || view.current === 'shared')) ||
+  (tab === 'memories' && view.current === 'year');
 </script>
 
 <nav class="tabbar" aria-label="Views">
