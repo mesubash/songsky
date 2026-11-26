@@ -1,5 +1,5 @@
 import { registerSW } from 'virtual:pwa-register';
-import { library } from '$lib/library/library.svelte';
+import { toast } from '$lib/toast.svelte';
 
 /** Service worker state: offline support and the "new version" prompt. */
 class Pwa {
@@ -12,7 +12,7 @@ class Pwa {
         this.updateReady = true;
       },
       onOfflineReady: () => {
-        library.notice = 'Attune is ready to use offline.';
+        toast.show('Attune is ready to use offline.');
       },
     });
   }

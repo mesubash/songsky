@@ -1,4 +1,5 @@
 import { SvelteMap } from 'svelte/reactivity';
+import { toast } from '$lib/toast.svelte';
 import { db } from './db';
 import { canPickFolder, isAbortError, isAudioFile, pickFiles, walkDirectory } from './files';
 import { type ReadResult, readTrack } from './metadata';
@@ -21,7 +22,6 @@ function compareTracks(a: Track, b: Track): number {
 class Library {
   tracks = $state<Track[]>([]);
   progress = $state<ImportProgress | null>(null);
-  notice = $state<string | null>(null);
   readonly canPickFolder = canPickFolder;
 
   byId = $derived(new Map(this.tracks.map((track) => [track.id, track])));
@@ -75,8 +75,9 @@ class Library {
     const chosen = files ?? (await pickFiles());
     const picked = chosen.filter((file) => isAudioFile(file.name));
     if (chosen.length > 0 && picked.length === 0) {
-      this.notice =
-        'Those files aren’t songs Attune can play. Choose MP3, M4A, FLAC, WAV or OGG files.';
+      toast.show(
+        'Those files aren’t songs Attune can play. Choose MP3, M4A, FLAC, WAV or OGG files.',
+      );
       return;
     }
     if (picked.length === 0) return;
@@ -85,7 +86,7 @@ class Library {
   }
 
   async #import(items: { file?: File; handle?: FileSystemFileHandle }[]): Promise<void> {
-    this.notice = null;
+    toast.clear();
     this.progress = { done: 0, total: items.length };
     const database = await db();
     const results: ReadResult[] = [];
@@ -131,9 +132,11 @@ class Library {
 
     this.tracks = [...this.tracks, ...results.map((r) => r.track)].sort(compareTracks);
     this.progress = null;
-    this.notice = copyFailed
-      ? 'Storage is full, so some songs will only play until you close Attune.'
-      : `Added ${results.length} ${results.length === 1 ? 'song' : 'songs'}.`;
+    toast.show(
+      copyFailed
+        ? 'Storage is full, so some songs will only play until you close Attune.'
+        : `Added ${results.length} ${results.length === 1 ? 'song' : 'songs'}.`,
+    );
   }
 
   /** Returns the audio for a track, asking for folder access again if the browser needs it. */
@@ -185,7 +188,7 @@ class Library {
     this.#sessionFiles.clear();
     this.#folders = [];
     this.tracks = [];
-    this.notice = null;
+    toast.clear();
   }
 }
 

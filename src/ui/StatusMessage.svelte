@@ -1,6 +1,7 @@
 <script lang="ts">
 import { library } from '$lib/library/library.svelte';
 import { player } from '$lib/player/player.svelte';
+import { toast } from '$lib/toast.svelte';
 
 const NOTICE_MS = 4000;
 
@@ -9,13 +10,13 @@ const message = $derived(
     ? library.progress.total === 0
       ? 'Looking for songs…'
       : `Reading ${library.progress.done} of ${library.progress.total} songs…`
-    : (player.error ?? library.notice),
+    : (player.error ?? toast.message),
 );
 
 // Success notices fade on their own; errors stay until the next action.
 $effect(() => {
-  if (!library.notice) return;
-  const timer = setTimeout(() => (library.notice = null), NOTICE_MS);
+  if (!toast.message) return;
+  const timer = setTimeout(() => toast.clear(), NOTICE_MS);
   return () => clearTimeout(timer);
 });
 </script>
