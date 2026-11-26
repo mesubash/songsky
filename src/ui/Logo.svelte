@@ -1,0 +1,41 @@
+<script lang="ts">
+/** The Songsky mark: a music note whose head is the sun rising over the horizon. */
+let { size = 32 }: { size?: number } = $props();
+</script>
+
+<!-- Decorative: the wordmark next to it carries the name. -->
+<svg class="logo" width={size} height={size} viewBox="0 0 64 64" aria-hidden="true">
+  <defs>
+    <linearGradient id="logo-sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1e2150" />
+      <stop offset=".62" stop-color="#4b3b7a" />
+      <stop offset="1" stop-color="#e07a5f" />
+    </linearGradient>
+    <radialGradient id="logo-glow" cx=".5" cy=".7" r=".6">
+      <stop offset="0" stop-color="#f6b26b" stop-opacity=".55" />
+      <stop offset="1" stop-color="#f6b26b" stop-opacity="0" />
+    </radialGradient>
+    <clipPath id="logo-tile"><rect width="64" height="64" rx="14" /></clipPath>
+    <clipPath id="logo-above"><rect width="64" height="44" /></clipPath>
+  </defs>
+  <g clip-path="url(#logo-tile)">
+    <rect width="64" height="64" fill="url(#logo-sky)" />
+    <rect width="64" height="64" fill="url(#logo-glow)" />
+    <rect y="44" width="64" height="20" fill="#161a36" />
+    <circle cx="27" cy="44" r="11" fill="#f6b26b" clip-path="url(#logo-above)" />
+    <g fill="none" stroke="#f6b26b" stroke-linecap="round" stroke-width="3.4">
+      <path d="M36.5 44V15" />
+      <path d="M36.5 15c3.5 5.5 10.5 6.5 10.5 14" />
+    </g>
+    <g stroke="#f6b26b" stroke-linecap="round" stroke-width="2.4">
+      <path d="M18 50h18" opacity=".55" />
+      <path d="M22 55h10" opacity=".3" />
+    </g>
+  </g>
+</svg>
+
+<style>
+.logo {
+  flex: none;
+}
+</style>

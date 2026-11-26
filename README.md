@@ -1,3 +1,5 @@
+<img src="public/icon.svg" alt="" width="72" height="72">
+
 # Songsky
 
 **Music that follows your sky.**

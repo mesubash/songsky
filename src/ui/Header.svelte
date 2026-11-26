@@ -2,12 +2,15 @@
 import { library } from '$lib/library/library.svelte';
 import { together } from '$lib/together/together.svelte';
 import Button from './Button.svelte';
+import Logo from './Logo.svelte';
 import SkyControl from './SkyControl.svelte';
 import TogetherButton from './TogetherButton.svelte';
 </script>
 
 <header class="header">
-  <h1 class="wordmark">songsky<span class="visually-hidden"> music player</span></h1>
+  <h1 class="wordmark">
+    <Logo size={34} />songsky<span class="visually-hidden"> music player</span>
+  </h1>
 
   <div class="actions">
     <SkyControl />
@@ -38,6 +41,9 @@ import TogetherButton from './TogetherButton.svelte';
 }
 
 .wordmark {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
   font-size: var(--text-xl);
   letter-spacing: -0.03em;
 }
