@@ -4,6 +4,7 @@ import { player } from '$lib/player/player.svelte';
 import Button from './Button.svelte';
 import Icon from './Icon.svelte';
 import TrackList from './TrackList.svelte';
+import TrackSkeleton from './TrackSkeleton.svelte';
 
 let query = $state('');
 
@@ -41,7 +42,7 @@ function playAll(ids: string[], shuffle = false) {
           id="discover-search"
           type="search"
           bind:value={query}
-          placeholder="Search songs and artists"
+          placeholder="Search Audius"
           enterkeyhint="search"
           oninput={() => {
             if (!query.trim()) discover.results = null;
@@ -89,7 +90,7 @@ function playAll(ids: string[], shuffle = false) {
       </Button>
     </div>
     {#if discover.skyStatus === 'loading' && !discover.forSky.length}
-      <p class="note">Finding songs for your sky…</p>
+      <TrackSkeleton label="Finding songs for your sky" />
     {:else if discover.skyStatus === 'error'}
       <p class="note">Couldn’t reach Audius. Check your connection and open Discover again.</p>
     {:else}
@@ -113,7 +114,7 @@ function playAll(ids: string[], shuffle = false) {
       </Button>
     </div>
     {#if discover.trendingStatus === 'loading' && !discover.trending.length}
-      <p class="note">Loading what people are playing…</p>
+      <TrackSkeleton label="Loading trending songs" />
     {:else if discover.trendingStatus === 'error'}
       <p class="note">Couldn’t reach Audius. Check your connection and open Discover again.</p>
     {:else}

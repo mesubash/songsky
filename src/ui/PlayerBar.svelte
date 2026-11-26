@@ -1,9 +1,11 @@
 <script lang="ts">
+import { library } from '$lib/library/library.svelte';
 import { player } from '$lib/player/player.svelte';
 import { sleep } from '$lib/sleep/sleep.svelte';
 import Button from './Button.svelte';
 import Controls from './Controls.svelte';
 import Cover from './Cover.svelte';
+import Icon from './Icon.svelte';
 import SeekBar from './SeekBar.svelte';
 import VolumeControl from './VolumeControl.svelte';
 
@@ -17,13 +19,31 @@ const progress = $derived(player.duration ? (player.position / player.duration) 
   <section class="bar" aria-label="Now playing">
     <div class="mini-progress" style:width="{progress}%"></div>
 
-    <button class="now" type="button" onclick={onexpand} aria-label="Open player: {track.title}">
-      <Cover coverId={track.coverId} artworkUrl={track.artworkUrl} size={52} />
-      <span class="text">
-        <span class="title">{track.title}</span>
-        <span class="artist">{track.artist}</span>
-      </span>
-    </button>
+    <div class="now-wrap">
+      <button class="now" type="button" onclick={onexpand} aria-label="Open player: {track.title}">
+        <Cover coverId={track.coverId} artworkUrl={track.artworkUrl} size={52} />
+        <span class="text">
+          <span class="title">{track.title}</span>
+          <span class="artist">{track.artist}</span>
+        </span>
+      </button>
+      {#if track.source === 'stream'}
+        {@const saved = library.isSaved(track.id)}
+        <button
+          class="save"
+          class:on={saved}
+          type="button"
+          aria-pressed={saved}
+          aria-label={saved
+            ? `Remove ${track.title} from your library`
+            : `Save ${track.title} to your library`}
+          title={saved ? 'Saved to your library' : 'Save to your library'}
+          onclick={() => (saved ? library.remove(track.id) : library.save(track))}
+        >
+          <Icon name="heart" size={18} />
+        </button>
+      {/if}
+    </div>
 
     <div class="center">
       <Controls />
@@ -104,6 +124,42 @@ const progress = $derived(player.duration ? (player.position / player.duration) 
   border: 0;
   background: none;
   text-align: start;
+}
+
+.now-wrap {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.now-wrap .now {
+  flex: 1;
+}
+
+.save {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: var(--text-muted);
+}
+
+.save:hover {
+  background: var(--surface);
+  color: var(--text);
+}
+
+.save.on {
+  color: var(--accent);
+}
+
+.save.on :global(path) {
+  fill: currentColor;
 }
 
 .text {
