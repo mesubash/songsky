@@ -5,10 +5,8 @@ import { player } from '$lib/player/player.svelte';
 import Button from './Button.svelte';
 import PaceButton from './PaceButton.svelte';
 
-/** Play, Shuffle, Mix and Pace for the library: in the page on phones, in the top bar on desktop. */
+/** Play, Shuffle, Mix and Pace for the library: above the song list. */
 const ids = $derived(library.tracks.map((t) => t.id));
-/** A library song is loaded, so the main button pauses or resumes instead of restarting. */
-const fromLibrary = $derived(!!player.current && ids.includes(player.current.id));
 
 /** A mix starting from the playing song, or a random one. */
 function playMix() {
@@ -19,22 +17,13 @@ function playMix() {
 </script>
 
 <div class="library-actions">
-  {#if fromLibrary}
-    <Button
-      variant="primary"
-      icon={player.playing ? 'pause' : 'play'}
-      onclick={() => player.toggle()}
-      >{player.playing ? 'Pause' : 'Resume'}</Button
-    >
-  {:else}
-    <Button
-      variant="primary"
-      icon="play"
-      title="Play your library from the first song"
-      onclick={() => player.playList(ids)}
-      >Play all</Button
-    >
-  {/if}
+  <Button
+    variant="primary"
+    icon="play"
+    title="Play your library from the first song"
+    onclick={() => player.playList(ids)}
+    >Play all</Button
+  >
   {#if ids.length > 1}
     <Button
       icon="shuffle"

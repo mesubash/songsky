@@ -7,7 +7,6 @@ import { player } from '$lib/player/player.svelte';
 import { together } from '$lib/together/together.svelte';
 import { view } from '$lib/view.svelte';
 import Button from './Button.svelte';
-import LibraryActions from './LibraryActions.svelte';
 import Logo from './Logo.svelte';
 import SearchBox from './SearchBox.svelte';
 import SkyControl from './SkyControl.svelte';
@@ -67,8 +66,6 @@ $effect(() => {
   <!-- Each page's own controls (desktop). Phones show them in the page instead. -->
   {#if view.current === 'discover'}
     <div class="header-search"><SearchBox id="header-search" /></div>
-  {:else if view.current === 'library' && library.tracks.length}
-    <div class="page-controls"><LibraryActions /></div>
   {/if}
 
   <div class="actions">
@@ -110,15 +107,17 @@ $effect(() => {
 }
 
 .scrolled {
-  background: color-mix(in srgb, var(--sky-top) 55%, transparent);
-  box-shadow: 0 8px 24px -16px rgb(0 0 0 / 0.35);
+  /* Nearly solid, so text scrolling underneath doesn't show through the title. */
+  background: color-mix(in srgb, var(--sky-top) 94%, transparent);
+  box-shadow:
+    0 1px 0 var(--line),
+    0 8px 24px -16px rgb(0 0 0 / 0.35);
   backdrop-filter: blur(20px) saturate(1.4);
   -webkit-backdrop-filter: blur(20px) saturate(1.4);
 }
 
 .page,
-.header-search,
-.page-controls {
+.header-search {
   display: none;
 }
 
@@ -195,8 +194,7 @@ $effect(() => {
     display: flex;
   }
 
-  .header-search,
-  .page-controls {
+  .header-search {
     display: block;
   }
 }

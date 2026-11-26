@@ -35,7 +35,7 @@ function clearLibrary() {
       {/if}
     </div>
     <div class="actions">
-      <div class="page-control"><LibraryActions /></div>
+      <LibraryActions />
       <button class="clear" type="button" onclick={clearLibrary}>Clear library</button>
     </div>
   </div>
@@ -84,17 +84,19 @@ function clearLibrary() {
   color: var(--text);
 }
 
-/* Desktop shows the title in the top bar, so this row holds only the actions. */
+/* Desktop shows the title in the top bar, so this row holds only the actions:
+   Play all, Shuffle and Mix on the left, Clear library on the right. */
 @media (min-width: 1100px) {
   .head {
-    justify-content: flex-end;
-    padding-block: var(--space-4);
+    padding-block: var(--space-6) var(--space-4);
   }
-}
 
-@media (min-width: 1100px) {
-  .page-control {
-    display: none;
+  .actions {
+    flex: 1;
+  }
+
+  .clear {
+    margin-left: auto;
   }
 }
 </style>
